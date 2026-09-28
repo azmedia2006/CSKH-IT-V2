@@ -136,7 +136,7 @@ async def create_ticket(
         current_user.email,
         f"Đã tiếp nhận yêu cầu {ticket['ticket_code']} - IT Service Desk",
         "Yêu cầu hỗ trợ của bạn đã được tiếp nhận",
-        ticket["ticket_code"], ticket["title"], ticket["description"][:2500], ticket_url,
+        ticket["ticket_code"], ticket["title"], ticket_url,
     )
 
     # Notify active administrators and the assigned technician about new requests.
@@ -162,7 +162,7 @@ async def create_ticket(
             email,
             f"Yêu cầu mới {ticket['ticket_code']} - IT Service Desk",
             "Có yêu cầu hỗ trợ mới",
-            ticket["ticket_code"], ticket["title"], ticket["description"][:2500], ticket_url,
+            ticket["ticket_code"], ticket["title"], ticket_url,
         )
     return ticket
 
@@ -720,7 +720,6 @@ async def create_comment(
                 heading,
                 ticket.ticket_code,
                 ticket.title,
-                comment_in.content[:2500],
                 ticket_url,
             )
 

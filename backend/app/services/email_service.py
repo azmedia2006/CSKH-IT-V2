@@ -17,30 +17,44 @@ async def send_ticket_notification_email(
     heading: str,
     ticket_code: str,
     ticket_title: str,
-    message: str,
     ticket_url: str,
 ) -> bool:
-    """Send a ticket event email without blocking the API request."""
+    """Send a discreet ticket alert; ticket messages are intentionally never emailed."""
     safe_heading = escape(heading)
     safe_code = escape(ticket_code)
     safe_title = escape(ticket_title)
-    safe_message = escape(message).replace("\n", "<br>")
     safe_url = escape(ticket_url, quote=True)
     html_content = f"""<!doctype html>
-<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;background:#f1f5f9;padding:24px;font-family:Arial,sans-serif;color:#0f172a">
-  <main style="max-width:600px;margin:auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
-    <header style="background:#4338ca;color:#fff;padding:20px 24px"><strong>IT Service Desk</strong></header>
-    <section style="padding:24px"><h2 style="font-size:20px">{safe_heading}</h2>
-      <p>Mã yêu cầu: <strong>{safe_code}</strong></p><p>Tiêu đề: {safe_title}</p>
-      <div style="padding:16px;background:#f8fafc;border-radius:8px;line-height:1.6">{safe_message}</div>
-      <p style="margin-top:24px"><a href="{safe_url}" style="background:#4338ca;color:#fff;text-decoration:none;padding:12px 18px;border-radius:8px">Xem yêu cầu</a></p>
-    </section><footer style="padding:16px 24px;background:#f8fafc;color:#64748b;font-size:12px">Thông báo tự động từ IT Service Desk.</footer>
-  </main>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Thông báo yêu cầu hỗ trợ</title></head>
+<body style="margin:0;background:#f3f5fb;padding:32px 14px;font-family:Arial,Helvetica,sans-serif;color:#172033">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0">Yêu cầu hỗ trợ của bạn vừa có cập nhật mới.</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;margin:0 auto;background:#fff;border:1px solid #e5e9f2;border-radius:16px;overflow:hidden">
+    <tr><td style="padding:22px 30px;background:#202b63;color:#fff">
+      <div style="font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:#c7d2fe">IT Service Desk</div>
+      <div style="font-size:20px;font-weight:700;margin-top:7px">Thông báo yêu cầu hỗ trợ</div>
+    </td></tr>
+    <tr><td style="padding:30px">
+      <div style="display:inline-block;padding:6px 10px;border-radius:20px;background:#eef2ff;color:#4338ca;font-size:12px;font-weight:700">CÓ CẬP NHẬT</div>
+      <h1 style="font-size:22px;line-height:1.35;margin:16px 0 8px;color:#172033">{safe_heading}</h1>
+      <p style="font-size:14px;line-height:1.7;color:#596579;margin:0 0 22px">Yêu cầu hỗ trợ của bạn đã có hoạt động mới. Để bảo vệ thông tin, nội dung trao đổi chỉ xem được sau khi đăng nhập vào hệ thống.</p>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8f9fc;border:1px solid #e8ebf3;border-radius:10px">
+        <tr><td style="padding:14px 16px 5px;color:#778197;font-size:12px">MÃ YÊU CẦU</td></tr>
+        <tr><td style="padding:0 16px 13px;color:#202b63;font-size:15px;font-weight:700">{safe_code}</td></tr>
+        <tr><td style="padding:0 16px 5px;color:#778197;font-size:12px">TIÊU ĐỀ</td></tr>
+        <tr><td style="padding:0 16px 15px;color:#273247;font-size:14px;line-height:1.5">{safe_title}</td></tr>
+      </table>
+      <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0 18px"><tr><td style="border-radius:9px;background:#4f46e5">
+        <a href="{safe_url}" style="display:inline-block;padding:13px 22px;color:#fff;text-decoration:none;font-size:14px;font-weight:700">Đăng nhập để xem yêu cầu</a>
+      </td></tr></table>
+      <p style="font-size:12px;line-height:1.6;color:#7b8496;margin:0">Nếu nút không hoạt động, hãy mở hệ thống IT Service Desk và tìm yêu cầu theo mã ở trên.</p>
+    </td></tr>
+    <tr><td style="padding:17px 30px;background:#f8f9fc;border-top:1px solid #e8ebf3;color:#8992a3;font-size:11px;line-height:1.6">Email tự động từ IT Service Desk. Vui lòng không trả lời thư này.</td></tr>
+  </table>
 </body></html>"""
     text_content = (
-        f"{heading}\nMã yêu cầu: {ticket_code}\nTiêu đề: {ticket_title}\n\n"
-        f"{message}\n\nXem yêu cầu: {ticket_url}\n\nIT Service Desk"
+        f"{heading}\n\nMã yêu cầu: {ticket_code}\nTiêu đề: {ticket_title}\n\n"
+        "Yêu cầu có hoạt động mới. Để bảo vệ thông tin, nội dung trao đổi chỉ xem được sau khi đăng nhập vào hệ thống.\n\n"
+        f"Đăng nhập để xem yêu cầu: {ticket_url}\n\nIT Service Desk"
     )
     return await asyncio.to_thread(
         _send_email_sync, to_email, subject, html_content, text_content
@@ -53,7 +67,7 @@ def _send_email_sync(to_email: str, subject: str, html_content: str, text_conten
         return False
 
     sender_email = settings.SMTP_FROM_EMAIL.strip() if (settings.SMTP_FROM_EMAIL and "@" in settings.SMTP_FROM_EMAIL) else settings.SMTP_USER.strip()
-    sender_name = "IT Service Desk"
+    sender_name = settings.SMTP_FROM_NAME or "IT Service Desk"
     sender_domain = sender_email.split("@")[-1] if "@" in sender_email else None
 
     msg = MIMEMultipart("alternative")
