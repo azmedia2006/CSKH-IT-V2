@@ -122,7 +122,11 @@ def check_ticket_access(ticket: Ticket, user: User, action: str = "read") -> boo
     if role == "REQUESTER":
         if action in ["read", "comment", "attachment"]:
             return ticket.requester_id == user.id
-        # Requester không được update trực tiếp hoặc gọi AI nội bộ
+        # Requesters may close their own ticket; the endpoint restricts this
+        # update to the status field and rejects every other edit.
+        if action == "update":
+            return ticket.requester_id == user.id
+        # Requester cannot call internal AI tools or manage someone else's ticket.
         return False
 
     # 5. SUPPORT AGENT L2

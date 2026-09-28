@@ -725,16 +725,18 @@ export const TicketDetailPage = () => {
             {/* Các nút hành động xử lý trạng thái ticket */}
             {ticket.status === 'RESOLVED' && (
               <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={handleReopenTicket}
-                  disabled={updateTicketMutation.isPending}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
-                  title="Mở lại yêu cầu để tiếp tục xử lý (Đang xử lý)"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Mở lại</span>
-                </button>
+                {!isRequester && (
+                  <button
+                    type="button"
+                    onClick={handleReopenTicket}
+                    disabled={updateTicketMutation.isPending}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                    title="Mở lại yêu cầu để tiếp tục xử lý (Đang xử lý)"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Mở lại</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={handleCloseTicket}
@@ -748,7 +750,7 @@ export const TicketDetailPage = () => {
               </div>
             )}
 
-            {ticket.status === 'CLOSED' && (
+            {ticket.status === 'CLOSED' && !isRequester && (
               <button
                 type="button"
                 onClick={handleReopenTicket}
@@ -763,16 +765,18 @@ export const TicketDetailPage = () => {
 
             {ticket.status !== 'RESOLVED' && ticket.status !== 'CLOSED' && (
               <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={handleResolveTicket}
-                  disabled={updateTicketMutation.isPending}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
-                  title="Đánh dấu đã giải quyết sự cố (RESOLVED) - Kỹ thuật đã xử lý xong"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="hidden sm:inline">Đã giải quyết</span>
-                </button>
+                {!isRequester && (
+                  <button
+                    type="button"
+                    onClick={handleResolveTicket}
+                    disabled={updateTicketMutation.isPending}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                    title="Đánh dấu đã giải quyết sự cố (RESOLVED) - Kỹ thuật đã xử lý xong"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="hidden sm:inline">Đã giải quyết</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={handleCloseTicket}

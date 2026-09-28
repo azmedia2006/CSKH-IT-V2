@@ -298,7 +298,7 @@ async def update_ticket(
 ):
     """
     Cập nhật ticket với danh sách trường cho phép (Allowlist) theo từng Role:
-    - REQUESTER: Bị chặn hoàn toàn (403).
+    - REQUESTER: Chỉ được đóng ticket của chính mình, không được sửa thông tin khác.
     - SUPPORT_AGENT (L1/L2):
         * Chỉ cập nhật ticket được giao cho mình (hoặc nhận ticket hợp lệ từ queue).
         * Chỉ được cập nhật: status, category_id, priority.
@@ -324,14 +324,32 @@ async def update_ticket(
     # 1. Kiểm tra quyền thao tác ghi chung
     verify_ticket_access_or_403(ticket, current_user, "update")
 
-    # 2. Requester không được phép cập nhật ticket
-    if is_requester(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Khách hàng không có quyền cập nhật thông tin ticket."
-        )
-
     update_data = ticket_in.model_dump(exclude_unset=True)
+    if is_requester(current_user):
+        # The customer-facing close action is intentionally the only permitted
+        # ticket update for a requester, and ownership was checked above.
+        if set(update_data) != {"status"} or update_data.get("status") != "CLOSED":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bạn chỉ có thể đóng ticket do chính mình tạo."
+            )
+        if ticket.status != "CLOSED":
+            allowed = VALID_STATUS_TRANSITIONS.get(ticket.status or "NEW", [])
+            if "CLOSED" not in allowed:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Không thể đóng ticket ở trạng thái '{ticket.status}'."
+                )
+            now = datetime.utcnow()
+            ticket.status = "CLOSED"
+            ticket.closed_at = now
+            if not ticket.resolved_at:
+                ticket.resolved_at = now
+            ticket.updated_at = now
+            await db.commit()
+            await db.refresh(ticket)
+        return _format_ticket_response(ticket, current_user=current_user)
+
     user_role = get_user_role(current_user)
     is_privileged = user_role in ["ADMIN", "TEAM_LEAD"]
 
