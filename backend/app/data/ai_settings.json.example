@@ -1,0 +1,18 @@
+﻿{
+  "provider": "auto",
+  "model_name": "gemini-flash-latest",
+  "groq_model_name": "llama-3.3-70b-versatile",
+  "cohere_model_name": "command-r-plus",
+  "rotation_strategy": "FAILOVER",
+  "cooldown_seconds": 60,
+  "timeout_seconds": 20,
+  "confidence_threshold": 0.8,
+  "auto_triage": true,
+  "mask_pii": true,
+  "sla_p1_response": 15,
+  "sla_p1_resolve": 240,
+  "email_alerts": true,
+  "keys": [],
+  "groq_keys": [],
+  "cohere_keys": []
+}
