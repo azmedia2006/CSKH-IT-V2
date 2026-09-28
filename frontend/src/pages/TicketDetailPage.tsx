@@ -532,6 +532,7 @@ export const TicketDetailPage = () => {
   const isAdmin = currentUser?.role_name === 'ADMIN';
   const isTeamLead = currentUser?.role_name === 'TEAM_LEAD';
   const isSupportAgent = currentUser?.role_name === 'SUPPORT_AGENT';
+  const canManageTicketStatus = isAdmin || isTeamLead || isSupportAgent;
 
   // RBAC theo báo cáo UC-03 & TC_BIZ_02: CHỈ TEAM_LEAD được quyền phân công thủ công
   const canAssignAgent = isTeamLead;
@@ -698,7 +699,7 @@ export const TicketDetailPage = () => {
           {/* Nút hành động chính */}
           <div className="flex items-center gap-1.5 sm:gap-2 w-full xl:w-auto shrink-0 min-w-0 [&_button]:min-h-10 [&_button]:justify-center [&_button]:whitespace-nowrap [&_svg]:shrink-0">
             {/* Các nút hành động xử lý trạng thái ticket */}
-            {ticket.status === 'RESOLVED' && (
+            {canManageTicketStatus && ticket.status === 'RESOLVED' && (
               <div className="grid grid-cols-2 flex-1 xl:flex-none min-w-0 gap-1.5">
                 <button
                   type="button"
@@ -724,7 +725,7 @@ export const TicketDetailPage = () => {
               </div>
             )}
 
-            {ticket.status === 'CLOSED' && (
+            {canManageTicketStatus && ticket.status === 'CLOSED' && (
               <button
                 type="button"
                 onClick={handleReopenTicket}
@@ -737,7 +738,7 @@ export const TicketDetailPage = () => {
               </button>
             )}
 
-            {ticket.status !== 'RESOLVED' && ticket.status !== 'CLOSED' && (
+            {canManageTicketStatus && ticket.status !== 'RESOLVED' && ticket.status !== 'CLOSED' && (
               <div className="grid grid-cols-2 flex-1 xl:flex-none min-w-0 gap-1.5">
                 <button
                   type="button"
@@ -747,8 +748,8 @@ export const TicketDetailPage = () => {
                   title="Đánh dấu đã giải quyết sự cố (RESOLVED) - Kỹ thuật đã xử lý xong"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="sm:hidden">Đã xử lý</span>
-                  <span className="hidden sm:inline">Đã giải quyết</span>
+                  <span className="sm:hidden">Giải quyết</span>
+                  <span className="hidden sm:inline">Giải quyết ticket</span>
                 </button>
                 <button
                   type="button"
