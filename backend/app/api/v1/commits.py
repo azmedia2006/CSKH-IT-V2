@@ -14,7 +14,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 ALLOWED_REPOS = [
-    "azmedia2006/CSKH-IT",
+    "azmedia2006/CSKH-IT-V2",
     "azmedia2006/DevSquad"
 ]
 
@@ -47,7 +47,7 @@ def parse_commit_type(message: str) -> dict:
     return {"type": "chore", "scope": None, "title": first_line}
 
 
-def get_local_git_commits(limit: int = 50) -> List[dict]:
+def get_local_git_commits(limit: int = 50, repo: str = settings.GITHUB_DEFAULT_REPO) -> List[dict]:
     """Fallback method using local git command if network fails."""
     try:
         cmd = [
@@ -75,7 +75,7 @@ def get_local_git_commits(limit: int = 50) -> List[dict]:
                     "author_email": email,
                     "author_avatar": None,
                     "date": date_str,
-                    "html_url": f"https://github.com/azmedia2006/CSKH-IT/commit/{sha}"
+                    "html_url": f"https://github.com/{repo}/commit/{sha}"
                 })
         return commits
     except Exception as e:
@@ -85,7 +85,7 @@ def get_local_git_commits(limit: int = 50) -> List[dict]:
 
 @router.get("")
 async def get_commits(
-    repo: str = Query(default="azmedia2006/CSKH-IT", description="GitHub Repository owner/repo"),
+    repo: str = Query(default=settings.GITHUB_DEFAULT_REPO, description="GitHub Repository owner/repo"),
     branch: str = Query(default="main", description="Branch name"),
     per_page: int = Query(default=50, ge=1, le=100),
     refresh: bool = Query(default=False, description="Force refresh bypass cache")
@@ -146,12 +146,12 @@ async def get_commits(
                     })
             else:
                 logger.error(f"GitHub API returned {resp.status_code}: {resp.text}")
-                if repo == "azmedia2006/CSKH-IT":
-                    commits_list = get_local_git_commits(per_page)
+                if repo == settings.GITHUB_DEFAULT_REPO:
+                    commits_list = get_local_git_commits(per_page, repo)
     except Exception as e:
         logger.error(f"Failed to fetch from GitHub API: {e}")
-        if repo == "azmedia2006/CSKH-IT":
-            commits_list = get_local_git_commits(per_page)
+        if repo == settings.GITHUB_DEFAULT_REPO:
+            commits_list = get_local_git_commits(per_page, repo)
 
     result = {
         "repo": repo,
@@ -175,14 +175,14 @@ async def get_commits(
 async def get_available_repos():
     """Danh sách các repo có thể xem commits & lộ trình."""
     return {
-        "default": "azmedia2006/CSKH-IT",
+        "default": settings.GITHUB_DEFAULT_REPO,
         "repos": [
             {
-                "id": "azmedia2006/CSKH-IT",
+                "id": settings.GITHUB_DEFAULT_REPO,
                 "name": "Hệ Thống Hỗ Trợ Khách Hàng CSKH-IT",
                 "default_branch": "main",
                 "description": "Kho mã nguồn chính của hệ thống Service Desk & AI Chatbot CSKH",
-                "url": "https://github.com/azmedia2006/CSKH-IT"
+                "url": f"https://github.com/{settings.GITHUB_DEFAULT_REPO}"
             }
         ]
     }

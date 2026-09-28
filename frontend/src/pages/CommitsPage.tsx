@@ -142,7 +142,7 @@ function formatDateHeader(dateStr: string): string {
 }
 
 export const CommitsPage: React.FC = () => {
-  const selectedRepo = 'azmedia2006/CSKH-IT';
+  const selectedRepo = 'azmedia2006/CSKH-IT-V2';
   const selectedBranch = 'main';
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterType, setFilterType] = useState<string>('all');
