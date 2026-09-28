@@ -5,7 +5,7 @@ import logging
 from typing import List, Optional
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, UploadFile, File, Form, HTTPException, status
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -23,8 +23,10 @@ from app.models.ticket import Ticket
 from app.models.comment import Comment
 from app.models.attachment import Attachment
 from app.models.category import Category
+from app.models.role import Role
 from app.models.ai_log import AILog
 from app.services import ticket_service
+from app.services.email_service import send_ticket_notification_email
 from app.ai.triage import ai_triage_ticket
 from app.ai.copilot import ai_draft_reply
 from app.ai.summarizer import ai_summarize_ticket
@@ -117,6 +119,7 @@ def _format_ticket_response(t: Ticket, current_user: Optional[User] = None) -> d
 @router.post("/", response_model=TicketResponse)
 async def create_ticket(
     ticket_in: TicketCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -126,7 +129,42 @@ async def create_ticket(
     - Tự động gán cho nhân viên L1 đang hoạt động phù hợp kỹ năng & cân bằng tải.
     - AI phân tích sentiment nội dung khởi tạo.
     """
-    return await ticket_service.create_ticket(db, ticket_in.model_dump(), current_user.id)
+    ticket = await ticket_service.create_ticket(db, ticket_in.model_dump(), current_user.id)
+    ticket_url = f"https://azmedia247.com/tickets/{ticket['id']}"
+    background_tasks.add_task(
+        send_ticket_notification_email,
+        current_user.email,
+        f"Đã tiếp nhận yêu cầu {ticket['ticket_code']} - IT Service Desk",
+        "Yêu cầu hỗ trợ của bạn đã được tiếp nhận",
+        ticket["ticket_code"], ticket["title"], ticket["description"][:2500], ticket_url,
+    )
+
+    # Notify active administrators and the assigned technician about new requests.
+    staff_result = await db.execute(
+        select(User.email).join(User.role).where(
+            User.is_active.is_(True),
+            Role.role_name == "ADMIN",
+        )
+    )
+    staff_emails = set(staff_result.scalars().all())
+    assigned_agent_id = ticket.get("assigned_agent_id")
+    if assigned_agent_id:
+        agent_result = await db.execute(
+            select(User.email).where(User.id == assigned_agent_id, User.is_active.is_(True))
+        )
+        agent_email = agent_result.scalar_one_or_none()
+        if agent_email:
+            staff_emails.add(agent_email)
+    staff_emails.discard(current_user.email)
+    for email in staff_emails:
+        background_tasks.add_task(
+            send_ticket_notification_email,
+            email,
+            f"Yêu cầu mới {ticket['ticket_code']} - IT Service Desk",
+            "Có yêu cầu hỗ trợ mới",
+            ticket["ticket_code"], ticket["title"], ticket["description"][:2500], ticket_url,
+        )
+    return ticket
 
 
 @router.get("/", response_model=List[TicketResponse])
@@ -582,6 +620,7 @@ async def list_comments(
 async def create_comment(
     ticket_id: str,
     comment_in: CommentCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -637,6 +676,53 @@ async def create_comment(
 
     await db.commit()
     await db.refresh(new_comment)
+
+    # Internal notes stay inside the service desk and are never emailed to customers.
+    if not is_internal_flag and comment_in.content and comment_in.content.strip():
+        ticket_url = f"https://azmedia247.com/tickets/{ticket.id}"
+        author_name = current_user.full_name or current_user.email
+        if user_is_req:
+            recipients = set()
+            if ticket.assigned_agent_id:
+                assigned_result = await db.execute(
+                    select(User.email).where(
+                        User.id == ticket.assigned_agent_id, User.is_active.is_(True)
+                    )
+                )
+                assigned_email = assigned_result.scalar_one_or_none()
+                if assigned_email:
+                    recipients.add(assigned_email)
+            admins_result = await db.execute(
+                select(User.email).join(User.role).where(
+                    User.is_active.is_(True), Role.role_name == "ADMIN"
+                )
+            )
+            recipients.update(admins_result.scalars().all())
+            recipients.discard(current_user.email)
+            subject = f"Khách hàng phản hồi {ticket.ticket_code} - IT Service Desk"
+            heading = "Khách hàng đã phản hồi yêu cầu"
+        else:
+            requester_result = await db.execute(
+                select(User.email).where(
+                    User.id == ticket.requester_id, User.is_active.is_(True)
+                )
+            )
+            requester_email = requester_result.scalar_one_or_none()
+            recipients = {requester_email} if requester_email else set()
+            subject = f"Cập nhật mới cho yêu cầu {ticket.ticket_code} - IT Service Desk"
+            heading = f"{author_name} đã phản hồi yêu cầu của bạn"
+
+        for email in recipients:
+            background_tasks.add_task(
+                send_ticket_notification_email,
+                email,
+                subject,
+                heading,
+                ticket.ticket_code,
+                ticket.title,
+                comment_in.content[:2500],
+                ticket_url,
+            )
 
     return CommentResponse(
         id=new_comment.id,

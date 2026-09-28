@@ -5,9 +5,46 @@ from email.header import Header
 from email.utils import formataddr, make_msgid, formatdate
 import asyncio
 import logging
+from html import escape
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+async def send_ticket_notification_email(
+    to_email: str,
+    subject: str,
+    heading: str,
+    ticket_code: str,
+    ticket_title: str,
+    message: str,
+    ticket_url: str,
+) -> bool:
+    """Send a ticket event email without blocking the API request."""
+    safe_heading = escape(heading)
+    safe_code = escape(ticket_code)
+    safe_title = escape(ticket_title)
+    safe_message = escape(message).replace("\n", "<br>")
+    safe_url = escape(ticket_url, quote=True)
+    html_content = f"""<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;background:#f1f5f9;padding:24px;font-family:Arial,sans-serif;color:#0f172a">
+  <main style="max-width:600px;margin:auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
+    <header style="background:#4338ca;color:#fff;padding:20px 24px"><strong>IT Service Desk</strong></header>
+    <section style="padding:24px"><h2 style="font-size:20px">{safe_heading}</h2>
+      <p>Mã yêu cầu: <strong>{safe_code}</strong></p><p>Tiêu đề: {safe_title}</p>
+      <div style="padding:16px;background:#f8fafc;border-radius:8px;line-height:1.6">{safe_message}</div>
+      <p style="margin-top:24px"><a href="{safe_url}" style="background:#4338ca;color:#fff;text-decoration:none;padding:12px 18px;border-radius:8px">Xem yêu cầu</a></p>
+    </section><footer style="padding:16px 24px;background:#f8fafc;color:#64748b;font-size:12px">Thông báo tự động từ IT Service Desk.</footer>
+  </main>
+</body></html>"""
+    text_content = (
+        f"{heading}\nMã yêu cầu: {ticket_code}\nTiêu đề: {ticket_title}\n\n"
+        f"{message}\n\nXem yêu cầu: {ticket_url}\n\nIT Service Desk"
+    )
+    return await asyncio.to_thread(
+        _send_email_sync, to_email, subject, html_content, text_content
+    )
 
 def _send_email_sync(to_email: str, subject: str, html_content: str, text_content: str | None = None) -> bool:
     """Synchronous SMTP email sender with full RFC 2822 standard headers"""
