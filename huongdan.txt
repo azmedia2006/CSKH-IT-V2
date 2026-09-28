@@ -1,0 +1,210 @@
+HƯỚNG DẪN SETUP CSKH-IT-V2 LẦN ĐẦU
+Repository: https://github.com/azmedia2006/CSKH-IT-V2
+
+PHẠM VI
+Hướng dẫn cài một bản V2 mới, database trống, trên Linux/bash.
+Backend và frontend chạy trực tiếp; PostgreSQL/pgvector và Redis chạy Docker.
+Đây là cách chạy thử/phát triển tại localhost, chưa phải cấu hình public HTTPS.
+Không thực hiện các bước tạo database này trên bản production đang có dữ liệu.
+
+1. CHUẨN BỊ
+Cài Git, Docker Engine, Python 3.11 kèm venv/pip, Node.js 22.12+ và npm.
+Tài khoản chạy lệnh cần có quyền dùng Docker.
+Kiểm tra:
+
+git --version
+docker version
+python3.11 --version
+node --version
+npm --version
+
+2. LẤY CODE
+Chạy tại thư mục muốn chứa dự án:
+
+git clone https://github.com/azmedia2006/CSKH-IT-V2.git
+cd CSKH-IT-V2
+
+Nếu repository riêng tư, đăng nhập GitHub bằng SSH hoặc credential manager.
+Không viết token trực tiếp vào URL clone.
+
+3. TẠO CẤU HÌNH BACKEND VÀ DATABASE
+Thực hiện tại thư mục gốc CSKH-IT-V2, chỉ khi chưa có backend/.env:
+
+cp -n backend/.env.example backend/.env
+python3.11 - <<'PY'
+from pathlib import Path
+import secrets
+p = Path('backend/.env')
+values = {}
+for line in p.read_text().splitlines():
+    if '=' in line and not line.lstrip().startswith('#'):
+        key, value = line.split('=', 1)
+        values[key] = value
+password = secrets.token_hex(24)
+values.update({
+    'DATABASE_URL': f'postgresql+asyncpg://postgres:{password}@127.0.0.1:15432/servicedesk',
+    'REDIS_URL': 'redis://127.0.0.1:16379/0',
+    'JWT_SECRET_KEY': secrets.token_hex(32),
+    'DEBUG': 'false',
+    'GITHUB_DEFAULT_REPO': 'azmedia2006/CSKH-IT-V2',
+    'OPENAI_API_KEY': '',
+    'GOOGLE_API_KEY': '',
+})
+p.write_text('\n'.join(f'{k}={v}' for k, v in values.items()) + '\n')
+p.chmod(0o600)
+db = Path('.setup-postgres.env')
+db.write_text(f'POSTGRES_USER=postgres\nPOSTGRES_PASSWORD={password}\nPOSTGRES_DB=servicedesk\n')
+db.chmod(0o600)
+with Path('.git/info/exclude').open('a') as f:
+    f.write('\n.setup-postgres.env\n')
+print('Da tao cau hinh; khong in mat khau ra man hinh.')
+PY
+
+Không chạy lại đoạn sinh mật khẩu sau khi database đã được khởi tạo:
+mật khẩu trong volume cũ sẽ không tự đổi theo file cấu hình mới.
+
+4. CHẠY POSTGRESQL/PGVECTOR VÀ REDIS
+Tại thư mục gốc dự án:
+
+docker run -d --name cskh-v2-local-db --restart unless-stopped \
+  --env-file .setup-postgres.env \
+  -p 127.0.0.1:15432:5432 \
+  -v cskh_v2_local_pgdata:/var/lib/postgresql/data \
+  ankane/pgvector:v0.5.1
+
+docker run -d --name cskh-v2-local-redis --restart unless-stopped \
+  -p 127.0.0.1:16379:6379 \
+  -v cskh_v2_local_redisdata:/data \
+  redis:7-alpine
+
+docker exec cskh-v2-local-db pg_isready -U postgres
+
+Chờ đến khi database báo accepting connections rồi tiếp tục.
+Nếu container đã tồn tại, dùng docker start thay vì chạy docker run lần nữa.
+
+5. CÀI THƯ VIỆN BACKEND
+
+cd backend
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+
+6. TẠO SCHEMA VÀ TÀI KHOẢN ADMIN
+Chạy trong thư mục backend với venv đang kích hoạt.
+Nhập email và mật khẩu admin do bạn tự chọn:
+
+read -r -p 'Email admin: ' CSKH_ADMIN_EMAIL
+read -r -s -p 'Mat khau admin (it nhat 12 ky tu): ' CSKH_ADMIN_PASSWORD
+printf '\n'
+export CSKH_ADMIN_EMAIL CSKH_ADMIN_PASSWORD
+
+python - <<'PY'
+import asyncio
+import os
+from sqlalchemy import select, text
+from app.core.database import engine, AsyncSessionLocal
+from app.core.security import get_password_hash
+from app.models.base import Base
+from app.models.user import User
+from app.models.role import Role
+import app.models
+from scripts.seed_db import seed_roles, seed_categories, seed_sla_policies
+
+async def main():
+    email = os.environ['CSKH_ADMIN_EMAIL'].strip()
+    password = os.environ['CSKH_ADMIN_PASSWORD']
+    if '@' not in email or len(password) < 12:
+        raise ValueError('Email khong hop le hoac mat khau duoi 12 ky tu')
+    async with engine.begin() as conn:
+        await conn.execute(text('CREATE EXTENSION IF NOT EXISTS vector'))
+        await conn.run_sync(Base.metadata.create_all)
+        # Startup hien tai con tham chieu hai cot attachment cua ban cu.
+        await conn.execute(text('ALTER TABLE attachments ADD COLUMN IF NOT EXISTS file_url VARCHAR(1024)'))
+        await conn.execute(text('ALTER TABLE attachments ADD COLUMN IF NOT EXISTS file_size_kb INTEGER'))
+    async with AsyncSessionLocal() as db:
+        await seed_roles(db)
+        await seed_categories(db)
+        await seed_sla_policies(db)
+        role = (await db.execute(select(Role).where(Role.role_name == 'ADMIN'))).scalar_one()
+        exists = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+        if exists is None:
+            db.add(User(email=email, full_name='Administrator', role_id=role.id,
+                        hashed_password=get_password_hash(password), is_active=True))
+            await db.commit()
+            print('Da tao tai khoan admin.')
+        else:
+            print('Email da ton tai; khong thay doi tai khoan hay mat khau.')
+    await engine.dispose()
+
+asyncio.run(main())
+PY
+
+unset CSKH_ADMIN_PASSWORD CSKH_ADMIN_EMAIL
+
+Bước này tạo schema từ model hiện tại cho database mới, không dùng để
+nâng cấp database đang có dữ liệu và không tạo mốc phiên bản Alembic.
+Không chạy thêm toàn bộ script seed_db.py nếu không muốn tạo tài khoản mẫu.
+DEBUG=false ngăn ứng dụng tự thêm tài khoản support giả lập lúc khởi động.
+
+7. CHẠY BACKEND — TERMINAL 1
+Trong thư mục backend, với venv đang kích hoạt:
+
+uvicorn app.main:app --host 127.0.0.1 --port 8000
+
+Giữ terminal này mở. API ở http://127.0.0.1:8000.
+Tài liệu API: http://127.0.0.1:8000/api/v1/docs
+
+8. CHẠY FRONTEND — TERMINAL 2
+Mở terminal khác, vào thư mục frontend của dự án vừa clone:
+
+cd /duong/dan/CSKH-IT-V2/frontend
+npm ci --no-audit --no-fund
+VITE_BACKEND_URL=http://127.0.0.1:8000 npm run dev -- --host 127.0.0.1
+
+Thay /duong/dan bằng đường dẫn thực tế.
+VITE_BACKEND_URL là cần thiết khi backend chạy trực tiếp ngoài Docker;
+nếu bỏ qua, proxy mặc định tìm máy tên backend và có thể trả lỗi 502.
+
+Mở http://localhost:5173, đăng nhập bằng admin đã tạo ở bước 6.
+Nếu setup trên VPS, localhost là VPS: cần SSH tunnel để mở từ máy cá nhân,
+hoặc triển khai Nginx/HTTPS riêng trước khi đưa website ra Internet.
+
+9. KIỂM TRA VÀ CẤU HÌNH CHỨC NĂNG
+
+curl -fsS http://127.0.0.1:8000/health
+curl -fsS http://127.0.0.1:8000/api/v1/commits/repos
+
+Có thể kiểm tra frontend build được bằng:
+cd /duong/dan/CSKH-IT-V2/frontend
+npm run build
+
+Vào phần cài đặt bằng admin để cấu hình AI và Google Login nếu sử dụng.
+Cấu hình SMTP nếu cần gửi email. Không dùng khóa hoặc mật khẩu minh họa.
+Backend/.env có thể thêm GITHUB_TOKEN cho repo riêng tư hoặc hạn mức API;
+chỉ cấp quyền đọc cần thiết, không đưa token lên GitHub.
+Repo này không cung cấp khóa API thật, chứng chỉ TLS hay dữ liệu production.
+AI/RAG cần cấu hình nhà cung cấp và nạp tài liệu trước khi sử dụng đầy đủ.
+
+10. CHẠY LẠI SAU KHI TẮT MÁY
+
+docker start cskh-v2-local-db cskh-v2-local-redis
+
+Sau đó chạy lại backend và frontend theo bước 7, 8.
+Khi mở terminal backend mới, nhớ source .venv/bin/activate.
+Không cần tạo lại schema, sinh lại mật khẩu hoặc tạo lại admin.
+
+11. RIÊNG SERVER AZMEDIA247.COM HIỆN TẠI
+Server đã setup và có dữ liệu, không chạy lại các bước khởi tạo bên trên.
+Code V2 đang đặt tại /root/CSKH/CSKH.
+Cấu hình production được lưu riêng trên server, không có đầy đủ khi clone:
+compose.production.yml, deploy.env, nginx.production.conf và ssl/.
+
+Để khởi động các dịch vụ production đã có:
+cd /root/CSKH/CSKH
+docker compose --env-file deploy.env -f compose.production.yml -p cskh-v2 up -d
+
+Frontend production dùng bản build frontend/dist, không dùng npm run dev.
+Không dùng docker compose down -v trên hệ thống cần giữ dữ liệu.
+Muốn setup một server production mới cần cấu hình domain/DNS, TLS,
+Nginx phục vụ frontend/dist, proxy /api/ đến backend và quản lý bí mật riêng.
