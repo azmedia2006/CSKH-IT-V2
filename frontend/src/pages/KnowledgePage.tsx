@@ -9,7 +9,7 @@ import {
   BookOpen, Search, Ticket as TicketIcon, Sparkles, HelpCircle, 
   ChevronRight, ChevronLeft, Bot, ArrowRight, Printer,
   Shield, Cpu, Wifi, Lock, X, Check, ThumbsUp, ThumbsDown, Copy,
-  Plus, Trash2, ChevronDown, ChevronUp, FileText, CheckCircle2, MessageCircleQuestion,
+  Plus, Trash2, Pencil, ChevronDown, ChevronUp, FileText, CheckCircle2, MessageCircleQuestion,
   Eye
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -329,6 +329,7 @@ export const KnowledgePage = () => {
 
   // Modal State for adding new article
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState('DEVICE');
   const [newDesc, setNewDesc] = useState('');
@@ -337,7 +338,7 @@ export const KnowledgePage = () => {
   const [stepInputs, setStepInputs] = useState<string[]>(['', '']);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const { data: serverArticles } = useQuery({
+  const { data: serverArticles, refetch: refetchArticles } = useQuery({
     queryKey: ['knowledgeArticles'],
     queryFn: knowledgeApi.getArticles,
   });
@@ -452,55 +453,74 @@ export const KnowledgePage = () => {
     setStepInputs(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleCreateArticleSubmit = (e: React.FormEvent) => {
+  const handleCreateArticleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newDesc.trim()) return;
 
-    const catObj = categories.find(c => c.id === newCategory) || categories[1];
-    const validSteps = stepInputs.filter(s => s.trim().length > 0);
-
-    const newArticle: Article = {
-      id: `custom-${Date.now()}`,
+    const validSteps = stepInputs.map(step => step.trim()).filter(Boolean);
+    const payload = {
       category: newCategory,
-      categoryLabel: catObj.label,
       title: newTitle.trim(),
       desc: newDesc.trim(),
-      views: '1 lượt xem',
-      time: 'Vừa xong',
-      badge: newBadge.trim() || 'Mới tạo',
+      badge: newBadge.trim() || undefined,
       content: newContent.trim() || newDesc.trim(),
-      steps: validSteps.length > 0 ? validSteps : ['Liên hệ trực tiếp IT Helpdesk để được hướng dẫn chi tiết.'],
-      isCustom: true
+      steps: validSteps.length ? validSteps : ['Liên hệ IT Service Desk để được hỗ trợ.'],
     };
 
-    const updated = [newArticle, ...customArticles];
-    setCustomArticles(updated);
-    localStorage.setItem('custom_knowledge_articles', JSON.stringify(updated));
-
-    // Reset Form & Close Modal
-    setNewTitle('');
-    setNewDesc('');
-    setNewContent('');
-    setStepInputs(['', '']);
-    setShowAddModal(false);
-
-    setToastMessage('Đã thêm bài viết mới vào Kho tri thức thành công!');
-    setTimeout(() => setToastMessage(null), 3500);
+    try {
+      if (editingArticle) {
+        await knowledgeApi.updateArticle(editingArticle.id, payload);
+        setToastMessage('Đã cập nhật bài viết trong Kho tri thức.');
+      } else {
+        await knowledgeApi.createArticle(payload);
+        setToastMessage('Đã lưu bài viết vào Kho tri thức.');
+      }
+      await refetchArticles();
+      setEditingArticle(null);
+      setNewTitle('');
+      setNewDesc('');
+      setNewContent('');
+      setNewBadge('Hướng dẫn');
+      setStepInputs(['', '']);
+      setShowAddModal(false);
+      setTimeout(() => setToastMessage(null), 3500);
+    } catch (error: any) {
+      setToastMessage(error.response?.data?.detail || 'Không thể lưu bài viết. Vui lòng thử lại.');
+      setTimeout(() => setToastMessage(null), 4000);
+    }
   };
 
-  const handleDeleteArticle = (articleId: number | string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleEditArticle = (article: Article, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setEditingArticle(article);
+    setNewTitle(article.title);
+    setNewCategory(article.category);
+    setNewDesc(article.desc);
+    setNewBadge(article.badge || '');
+    setNewContent(article.content);
+    setStepInputs(article.steps.length ? article.steps : ['']);
+    setShowAddModal(true);
+  };
+
+  const handleDeleteArticle = async (articleId: number | string, event: React.MouseEvent) => {
+    event.stopPropagation();
     if (!confirm('Bạn có chắc chắn muốn xóa bài viết này khỏi Kho tri thức?')) return;
 
-    const updated = customArticles.filter(a => a.id !== articleId);
-    setCustomArticles(updated);
-    localStorage.setItem('custom_knowledge_articles', JSON.stringify(updated));
-
-    if (readingArticle && readingArticle.id === articleId) {
-      setReadingArticle(null);
+    try {
+      if (String(articleId).startsWith('custom-')) {
+        const updated = customArticles.filter(article => article.id !== articleId);
+        setCustomArticles(updated);
+        localStorage.setItem('custom_knowledge_articles', JSON.stringify(updated));
+      } else {
+        await knowledgeApi.deleteArticle(articleId);
+        await refetchArticles();
+      }
+      if (readingArticle?.id === articleId) setReadingArticle(null);
+      setToastMessage('Đã xóa bài viết khỏi Kho tri thức.');
+    } catch (error: any) {
+      setToastMessage(error.response?.data?.detail || 'Không thể xóa bài viết. Vui lòng thử lại.');
     }
-    setToastMessage('Đã xóa bài viết khỏi Kho tri thức.');
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 3500);
   };
 
   return (
@@ -703,6 +723,12 @@ export const KnowledgePage = () => {
                         </span>
                       )}
                       {art.isCustom && canManageArticles && (
+                        <>
+                        {!String(art.id).startsWith('custom-') && (
+                          <button type="button" onClick={(e) => handleEditArticle(art, e)} className="p-1 text-slate-400 hover:text-indigo-600 rounded-md hover:bg-indigo-50 transition-colors" title="Sửa bài viết">
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={(e) => handleDeleteArticle(art.id, e)}
@@ -711,6 +737,7 @@ export const KnowledgePage = () => {
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -969,7 +996,7 @@ export const KnowledgePage = () => {
                   <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600">
                     <FileText className="w-4 h-4" />
                   </div>
-                  <h3 className="font-bold text-slate-900 text-sm">Thêm bài viết mới vào Kho tri thức</h3>
+                  <h3 className="font-bold text-slate-900 text-sm">{editingArticle ? 'Sửa bài viết Kho tri thức' : 'Thêm bài viết mới vào Kho tri thức'}</h3>
                 </div>
                 <button
                   type="button"
@@ -1084,7 +1111,7 @@ export const KnowledgePage = () => {
                 <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                   <button
                     type="button"
-                    onClick={() => setShowAddModal(false)}
+                    onClick={() => { setShowAddModal(false); setEditingArticle(null); }}
                     className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
                   >
                     Hủy
@@ -1093,7 +1120,7 @@ export const KnowledgePage = () => {
                     type="submit"
                     className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs cursor-pointer"
                   >
-                    Lưu bài viết
+                    {editingArticle ? 'Cập nhật bài viết' : 'Lưu bài viết'}
                   </button>
                 </div>
               </form>

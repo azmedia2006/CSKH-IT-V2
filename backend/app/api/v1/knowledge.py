@@ -1,12 +1,15 @@
 import time
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_db, get_current_user, get_current_user_optional
 from app.models.user import User
+from app.models.category import Category
+from app.models.knowledge_base import KnowledgeBase
 
 router = APIRouter()
 
@@ -23,6 +26,14 @@ class KnowledgeArticle(BaseModel):
     content: str
     steps: List[str]
     isCustom: Optional[bool] = False
+
+class KnowledgeArticleInput(BaseModel):
+    category: str = Field(min_length=1, max_length=50)
+    title: str = Field(min_length=1, max_length=255)
+    desc: str = Field(min_length=1, max_length=2000)
+    badge: Optional[str] = Field(default=None, max_length=100)
+    content: str = Field(min_length=1)
+    steps: List[str] = Field(default_factory=list, max_length=50)
 
 class FAQItem(BaseModel):
     id: str
@@ -659,7 +670,120 @@ async def get_articles(
                 art_obj.views = f"{st['views']} lượt xem"
             articles.append(art_obj)
 
+    custom_result = await db.execute(
+        select(KnowledgeBase).options(selectinload(KnowledgeBase.category)).where(KnowledgeBase.is_published.is_(True)).order_by(KnowledgeBase.updated_at.desc())
+    )
+    for custom_article in custom_result.scalars().all():
+        article = _serialize_knowledge_article(custom_article, stats)
+        if str(article.id) not in seen_ids:
+            articles.insert(0, article)
+            seen_ids.add(str(article.id))
+
     return articles
+
+
+KNOWLEDGE_CATEGORY_MAP = {
+    "DEVICE": "DEVICE",
+    "AUTH": "ACCOUNT_AUTH",
+    "NETWORK": "NETWORK_INFRA",
+    "SOFTWARE": "SOFTWARE_BUG",
+    "SECURITY": "SECURITY",
+}
+
+
+def _can_manage_articles(user: User) -> bool:
+    return bool(user.role and user.role.role_name in {"ADMIN", "TEAM_LEAD", "SUPPORT_AGENT"})
+
+
+def _require_article_manager(user: User) -> None:
+    if not _can_manage_articles(user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bạn không có quyền quản lý bài viết.")
+
+
+def _serialize_knowledge_article(article: KnowledgeBase, stats: dict) -> KnowledgeArticle:
+    category = article.category.code if article.category else "GENERAL"
+    category_label = article.category.name if article.category else "Hướng dẫn chung"
+    aid = str(article.id)
+    article_stats = stats.get(aid, {})
+    return KnowledgeArticle(
+        id=aid,
+        category=next((key for key, value in KNOWLEDGE_CATEGORY_MAP.items() if value == category), category),
+        categoryLabel=category_label,
+        title=article.title,
+        desc=article.summary or article.content[:180],
+        views=f"{article_stats.get('views', 0)} lượt xem",
+        time=f"Cập nhật {article.updated_at.strftime('%d/%m/%Y') if article.updated_at else 'hôm nay'}",
+        badge=article.badge,
+        content=article.content,
+        steps=article.steps or [],
+        isCustom=True,
+    )
+
+
+@router.post("/articles", response_model=KnowledgeArticle, status_code=status.HTTP_201_CREATED)
+async def create_knowledge_article(
+    payload: KnowledgeArticleInput,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_article_manager(current_user)
+    category_code = KNOWLEDGE_CATEGORY_MAP.get(payload.category, payload.category)
+    category = (await db.execute(select(Category).where(Category.code == category_code))).scalars().first()
+    if not category:
+        raise HTTPException(status_code=422, detail="Danh mục bài viết không hợp lệ.")
+    article = KnowledgeBase(
+        title=payload.title.strip(), content=payload.content.strip(),
+        summary=payload.desc.strip(), steps=[step.strip() for step in payload.steps if step.strip()],
+        badge=payload.badge.strip() if payload.badge else None,
+        category_id=category.id, is_published=True,
+    )
+    db.add(article)
+    await db.commit()
+    await db.refresh(article)
+    article.category = category
+    return _serialize_knowledge_article(article, _load_article_stats())
+
+
+@router.put("/articles/{article_id}", response_model=KnowledgeArticle)
+async def update_knowledge_article(
+    article_id: str,
+    payload: KnowledgeArticleInput,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_article_manager(current_user)
+    article = (await db.execute(select(KnowledgeBase).where(KnowledgeBase.id == article_id))).scalars().first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài viết.")
+    category_code = KNOWLEDGE_CATEGORY_MAP.get(payload.category, payload.category)
+    category = (await db.execute(select(Category).where(Category.code == category_code))).scalars().first()
+    if not category:
+        raise HTTPException(status_code=422, detail="Danh mục bài viết không hợp lệ.")
+    article.title = payload.title.strip()
+    article.content = payload.content.strip()
+    article.summary = payload.desc.strip()
+    article.steps = [step.strip() for step in payload.steps if step.strip()]
+    article.badge = payload.badge.strip() if payload.badge else None
+    article.category_id = category.id
+    await db.commit()
+    await db.refresh(article)
+    article.category = category
+    return _serialize_knowledge_article(article, _load_article_stats())
+
+
+@router.delete("/articles/{article_id}")
+async def delete_knowledge_article(
+    article_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _require_article_manager(current_user)
+    article = (await db.execute(select(KnowledgeBase).where(KnowledgeBase.id == article_id))).scalars().first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài viết.")
+    await db.delete(article)
+    await db.commit()
+    return {"message": "Đã xóa bài viết."}
 
 @router.get("/articles/{article_id}", response_model=KnowledgeArticle)
 async def get_article_detail(
@@ -679,7 +803,14 @@ async def get_article_detail(
                 art.views = f"{st['views']} lượt xem"
             return art
 
-    # 2. Tra cứu trong RAG Chunks Database
+    # 2. Tra cứu bài viết tùy chỉnh được lưu trong database.
+    custom_article = (await db.execute(
+        select(KnowledgeBase).options(selectinload(KnowledgeBase.category)).where(KnowledgeBase.id == article_id, KnowledgeBase.is_published.is_(True))
+    )).scalars().first()
+    if custom_article:
+        return _serialize_knowledge_article(custom_article, stats)
+
+    # 3. Tra cứu trong RAG Chunks Database
     stmt = select(RAGChunk).where(RAGChunk.article_id == article_id)
     res = await db.execute(stmt)
     chunk = res.scalars().first()

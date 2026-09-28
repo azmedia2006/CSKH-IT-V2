@@ -41,6 +41,20 @@ export const knowledgeApi = {
     return response.data;
   },
 
+  createArticle: async (data: Omit<Article, 'id' | 'views' | 'time' | 'isCustom' | 'categoryLabel'>): Promise<Article> => {
+    const response = await api.post('/knowledge/articles', data);
+    return response.data;
+  },
+
+  updateArticle: async (id: number | string, data: Omit<Article, 'id' | 'views' | 'time' | 'isCustom' | 'categoryLabel'>): Promise<Article> => {
+    const response = await api.put(`/knowledge/articles/${id}`, data);
+    return response.data;
+  },
+
+  deleteArticle: async (id: number | string): Promise<void> => {
+    await api.delete(`/knowledge/articles/${id}`);
+  },
+
   getFaqs: async (): Promise<FAQItem[]> => {
     const response = await api.get('/knowledge/faqs');
     return response.data;

@@ -20,6 +20,14 @@ async def lifespan(app: FastAPI):
         from app.core.database import engine
         from sqlalchemy import text
         async with engine.begin() as conn:
+            await conn.execute(text("""
+                INSERT INTO categories (id, name, code, description, created_at, updated_at)
+                VALUES ('a0929d53-6022-54d9-bdad-bc1dc67a05f4', 'Bảo mật & 2FA', 'SECURITY', 'Tài liệu bảo mật và xác thực hai yếu tố', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ON CONFLICT (code) DO NOTHING
+            """))
+            await conn.execute(text("ALTER TABLE knowledge_base ADD COLUMN IF NOT EXISTS summary TEXT;"))
+            await conn.execute(text("ALTER TABLE knowledge_base ADD COLUMN IF NOT EXISTS steps JSON;"))
+            await conn.execute(text("ALTER TABLE knowledge_base ADD COLUMN IF NOT EXISTS badge VARCHAR(100);"))
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS support_level VARCHAR(10);"))
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS skill_group VARCHAR(50);"))
             await conn.execute(text("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS support_level VARCHAR(10) DEFAULT 'L1';"))
