@@ -656,11 +656,11 @@ export const TicketDetailPage = () => {
       <div className="flex flex-col h-[calc(100dvh-64px)] bg-[#f8fafc] overflow-hidden">
         
         {/* THANH TIÊU ĐỀ TICKET GỌN GÀNG (Chỉ giữ thông tin cần thiết: Quay lại, Mã, Tiêu đề và 1 Trạng thái) */}
-        <header className="bg-white border-b border-slate-200/90 px-4 sm:px-6 py-2.5 shrink-0 flex flex-col items-stretch xl:flex-row xl:items-center justify-between gap-3 z-10 shadow-2xs">
+        <header className="bg-white border-b border-slate-200/90 px-4 sm:px-6 py-2.5 shrink-0 flex flex-col items-stretch xl:flex-row xl:items-center justify-between gap-2 z-10 shadow-2xs">
           <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
             <Link 
               to="/tickets" 
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer shrink-0"
+              className="inline-flex items-center gap-1.5 justify-center h-8 w-8 sm:w-auto sm:px-2.5 sm:py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer shrink-0"
               title="Quay lại danh sách yêu cầu"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -672,10 +672,10 @@ export const TicketDetailPage = () => {
             <button
               type="button"
               onClick={handleCopyCode}
-              className="group inline-flex items-center gap-1 text-xs font-mono font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-md border border-slate-200 transition-colors cursor-pointer shrink-0"
+              className="group inline-flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-1 text-[11px] sm:text-xs font-mono font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-md border border-slate-200 transition-colors cursor-pointer"
               title="Sao chép mã ticket"
             >
-              <span>{ticket.ticket_code}</span>
+              <span className="truncate">{ticket.ticket_code}</span>
               {copiedCode ? (
                 <Check className="w-3 h-3 text-emerald-600" />
               ) : (
@@ -683,7 +683,7 @@ export const TicketDetailPage = () => {
               )}
             </button>
 
-            <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 max-w-full break-words">
+            <span className="hidden sm:inline text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 max-w-full break-words">
               {getCategoryLabel(ticket)}
             </span>
 
@@ -697,12 +697,12 @@ export const TicketDetailPage = () => {
           </div>
 
           {/* Nút hành động chính */}
-          <div className="flex flex-wrap items-center gap-2 shrink-0 max-w-full [&_button]:min-h-10 [&_button]:shrink-0 [&_button]:whitespace-nowrap">
+          <div className="flex items-center gap-1.5 sm:gap-2 w-full xl:w-auto shrink-0 min-w-0 [&_button]:min-h-10 [&_button]:justify-center [&_button]:whitespace-nowrap [&_svg]:shrink-0">
             {/* Nút Đóng / Mở bảng thuộc tính bên phải để nhắn tin rộng rãi */}
             <button
               type="button"
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer shadow-2xs ${
+              className={`inline-flex shrink-0 items-center gap-1.5 w-10 md:w-auto md:px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer shadow-2xs ${
                 isSidebarCollapsed
                   ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
                   : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
@@ -724,7 +724,7 @@ export const TicketDetailPage = () => {
 
             {/* Các nút hành động xử lý trạng thái ticket */}
             {ticket.status === 'RESOLVED' && (
-              <div className="flex items-center gap-1.5">
+              <div className="grid grid-cols-2 flex-1 xl:flex-none min-w-0 gap-1.5">
                 <button
                   type="button"
                   onClick={handleReopenTicket}
@@ -743,7 +743,8 @@ export const TicketDetailPage = () => {
                   title="Đóng hoàn tất ticket này (CLOSED)"
                 >
                   <Check className="w-3.5 h-3.5" />
-                  <span>Đóng ticket</span>
+                  <span className="sm:hidden">Đóng</span>
+                  <span className="hidden sm:inline">Đóng ticket</span>
                 </button>
               </div>
             )}
@@ -753,7 +754,7 @@ export const TicketDetailPage = () => {
                 type="button"
                 onClick={handleReopenTicket}
                 disabled={updateTicketMutation.isPending}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                className="inline-flex flex-1 xl:flex-none items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-2xs cursor-pointer disabled:opacity-50"
                 title="Mở lại ticket đã đóng"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -762,7 +763,7 @@ export const TicketDetailPage = () => {
             )}
 
             {ticket.status !== 'RESOLVED' && ticket.status !== 'CLOSED' && (
-              <div className="flex items-center gap-1.5">
+              <div className="grid grid-cols-2 flex-1 xl:flex-none min-w-0 gap-1.5">
                 <button
                   type="button"
                   onClick={handleResolveTicket}
@@ -771,6 +772,7 @@ export const TicketDetailPage = () => {
                   title="Đánh dấu đã giải quyết sự cố (RESOLVED) - Kỹ thuật đã xử lý xong"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="sm:hidden">Đã xử lý</span>
                   <span className="hidden sm:inline">Đã giải quyết</span>
                 </button>
                 <button
@@ -781,7 +783,8 @@ export const TicketDetailPage = () => {
                   title="Đóng hoàn tất ticket (CLOSED)"
                 >
                   <Check className="w-3.5 h-3.5" />
-                  <span>Đóng ticket</span>
+                  <span className="sm:hidden">Đóng</span>
+                  <span className="hidden sm:inline">Đóng ticket</span>
                 </button>
               </div>
             )}
@@ -793,7 +796,7 @@ export const TicketDetailPage = () => {
                 onClick={handleDeleteTicket}
                 disabled={deleteTicketMutation.isPending}
                 title="Xóa vĩnh viễn ticket (Chỉ Quản trị viên)"
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-medium border border-rose-200 transition-colors cursor-pointer disabled:opacity-50"
+                className="inline-flex shrink-0 items-center gap-1 w-10 sm:w-auto sm:px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-medium border border-rose-200 transition-colors cursor-pointer disabled:opacity-50"
               >
                 {deleteTicketMutation.isPending ? (
                   <div className="w-3.5 h-3.5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" />
