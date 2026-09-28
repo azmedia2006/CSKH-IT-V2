@@ -108,6 +108,7 @@ export const TicketDetailPage = () => {
   const [isInternalNote, setIsInternalNote] = useState(false);
   const [isExpandedComposer, setIsExpandedComposer] = useState(false);
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
+  const [isTicketInfoCollapsed, setIsTicketInfoCollapsed] = useState(false);
   const [showAiSummary, setShowAiSummary] = useState(false);
   const [showAiTriageModal, setShowAiTriageModal] = useState(false);
   const [aiDraftText, setAiDraftText] = useState<string | null>(null);
@@ -825,14 +826,27 @@ export const TicketDetailPage = () => {
 
         {/* BỐ CỤC 2 CỘT: Cột chính (Nội dung & Hội thoại) + Cột phụ (Bảng thuộc tính có thể đóng/mở) */}
         <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6 pb-24 sm:pb-24">
-          <div className={`mx-auto transition-all duration-300 ${
-            'max-w-7xl grid grid-cols-1 gap-6 items-start lg:grid-cols-12'
+          <div className={`mx-auto transition-all duration-300 ${isTicketInfoCollapsed
+            ? 'max-w-screen-2xl grid grid-cols-1 items-start'
+            : 'max-w-7xl grid grid-cols-1 gap-6 items-start lg:grid-cols-12'
           }`}>
             
             {/* CỘT CHÍNH: Mở rộng tràn viền toàn bộ khi thu gọn thông tin, hoặc 8 cột khi mở panel */}
             <div className={`min-w-0 space-y-5 transition-all duration-300 ${
-              'min-w-0 lg:col-span-8'
+              isTicketInfoCollapsed ? 'lg:col-span-12' : 'lg:col-span-8'
             }`}>
+              {isTicketInfoCollapsed && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsTicketInfoCollapsed(false)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-2xs"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                    Hiện thông tin ticket
+                  </button>
+                </div>
+              )}
               
               {/* 1. NỘI DUNG SỰ CỐ BAN ĐẦU */}
               <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
@@ -1264,6 +1278,8 @@ export const TicketDetailPage = () => {
 
             </div>
 
+            {!isTicketInfoCollapsed && (
+            <>
             {/* CỘT PHỤ (4 CỘT): Gom nhóm thuộc tính Ticket, Cam kết SLA và Người yêu cầu thành 1 khối tinh gọn */}
               <div className="min-w-0 lg:col-span-4 space-y-4 lg:sticky lg:top-4 animate-in fade-in slide-in-from-right-4 duration-200">
                 
@@ -1275,6 +1291,15 @@ export const TicketDetailPage = () => {
                       Thuộc tính yêu cầu
                     </h3>
                     <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setIsTicketInfoCollapsed(true)}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md"
+                        title="Thu gọn thông tin ticket"
+                      >
+                        <Minimize2 className="w-3 h-3" />
+                        <span>Thu gọn</span>
+                      </button>
                       {!isRequester && (
                         <button
                           type="button"
@@ -1482,6 +1507,8 @@ export const TicketDetailPage = () => {
 
 
             </div>
+            </>
+            )}
 
         </div>
       </div>

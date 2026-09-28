@@ -651,7 +651,7 @@ export const TicketsPage = () => {
                     <th className="py-3.5 px-4 w-[140px] whitespace-nowrap">Trạng thái</th>
                     <th className="py-3.5 px-4 w-[110px] whitespace-nowrap">{isRequester ? 'Thời gian gửi' : 'Thời gian'}</th>
                     <th className="py-3.5 px-4 w-[150px] whitespace-nowrap">{isRequester ? 'Thời hạn xử lý' : 'Hạn cam kết SLA'}</th>
-                    <th className="py-3.5 px-4 w-[120px] whitespace-nowrap text-right">Chi tiết</th>
+                    <th className="sticky right-0 z-20 py-3.5 px-4 w-[150px] whitespace-nowrap text-right bg-slate-50/95 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.35)]">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700 font-normal">
@@ -784,7 +784,7 @@ export const TicketsPage = () => {
                         </td>
 
                         {/* Detail Action */}
-                        <td className="py-3.5 px-4 align-middle text-right whitespace-nowrap">
+                        <td className="sticky right-0 z-10 py-3.5 px-4 align-middle text-right whitespace-nowrap bg-white group-hover:bg-indigo-50/40 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.25)]">
                           <div className="inline-flex items-center gap-1.5 justify-end">
                             <Link
                               to={`/tickets/${t.id}`}
