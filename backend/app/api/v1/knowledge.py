@@ -26,6 +26,7 @@ class KnowledgeArticle(BaseModel):
     content: str
     steps: List[str]
     isCustom: Optional[bool] = False
+    isSampleUnapproved: Optional[bool] = False
 
 class KnowledgeArticleInput(BaseModel):
     category: str = Field(min_length=1, max_length=50)
@@ -620,7 +621,8 @@ def _parse_rag_chunk(c: RAGChunk):
         badge=None,
         content=formatted_content,
         steps=steps,
-        isCustom=False
+        isCustom=False,
+        isSampleUnapproved=True,
     )
 
 @router.get("/articles", response_model=List[KnowledgeArticle])
@@ -635,11 +637,13 @@ async def get_articles(
 
     # 1. Bổ sung các bài viết từ RAG Chunks trong Database
     try:
-        stmt = (
-            select(RAGChunk)
-            .distinct(RAGChunk.article_id)
-            .order_by(RAGChunk.article_id)
-        )
+        role_name = current_user.role.role_name if current_user and current_user.role else "REQUESTER"
+        stmt = select(RAGChunk)
+        if role_name in {"SUPPORT_AGENT", "TEAM_LEAD"}:
+            stmt = stmt.where(RAGChunk.visibility.in_(["PUBLIC", "INTERNAL"]))
+        elif role_name != "ADMIN":
+            stmt = stmt.where(RAGChunk.visibility == "PUBLIC")
+        stmt = stmt.distinct(RAGChunk.article_id).order_by(RAGChunk.article_id, RAGChunk.chunk_index)
         res = await db.execute(stmt)
         rag_chunks = res.scalars().all()
         for c in rag_chunks:
@@ -811,8 +815,13 @@ async def get_article_detail(
         return _serialize_knowledge_article(custom_article, stats)
 
     # 3. Tra cứu trong RAG Chunks Database
+    role_name = current_user.role.role_name if current_user.role else "REQUESTER"
     stmt = select(RAGChunk).where(RAGChunk.article_id == article_id)
-    res = await db.execute(stmt)
+    if role_name in {"SUPPORT_AGENT", "TEAM_LEAD"}:
+        stmt = stmt.where(RAGChunk.visibility.in_(["PUBLIC", "INTERNAL"]))
+    elif role_name != "ADMIN":
+        stmt = stmt.where(RAGChunk.visibility == "PUBLIC")
+    res = await db.execute(stmt.order_by(RAGChunk.chunk_index))
     chunk = res.scalars().first()
     if chunk:
         art = _parse_rag_chunk(chunk)

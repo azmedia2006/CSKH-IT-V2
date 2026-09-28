@@ -27,6 +27,7 @@ interface Article {
   content: string;
   steps: string[];
   isCustom?: boolean;
+  isSampleUnapproved?: boolean;
 }
 
 interface FAQItem {
@@ -345,13 +346,23 @@ export const KnowledgePage = () => {
   const baseArticles = serverArticles && serverArticles.length > 0 ? serverArticles : DEFAULT_ARTICLES;
   const allArticles: Article[] = [...customArticles, ...baseArticles];
 
+  const categoryIcons: Record<string, typeof BookOpen> = {
+    DEVICE: Printer,
+    AUTH: Lock,
+    NETWORK: Wifi,
+    SOFTWARE: Cpu,
+    SECURITY: Shield,
+  };
   const categories = [
     { id: 'ALL', label: 'Tất cả chủ đề', icon: BookOpen, count: allArticles.length },
-    { id: 'DEVICE', label: 'Thiết bị & Máy in', icon: Printer, count: allArticles.filter(a => a.category === 'DEVICE').length },
-    { id: 'AUTH', label: 'Tài khoản & Xác thực', icon: Lock, count: allArticles.filter(a => a.category === 'AUTH').length },
-    { id: 'NETWORK', label: 'Mạng & VPN', icon: Wifi, count: allArticles.filter(a => a.category === 'NETWORK').length },
-    { id: 'SOFTWARE', label: 'Phần mềm & Cấp quyền', icon: Cpu, count: allArticles.filter(a => a.category === 'SOFTWARE').length },
-    { id: 'SECURITY', label: 'Bảo mật & 2FA', icon: Shield, count: allArticles.filter(a => a.category === 'SECURITY').length },
+    ...Array.from(new Map(allArticles.map(article => [article.category, article.categoryLabel])).entries())
+      .map(([id, label]) => ({
+        id,
+        label,
+        icon: categoryIcons[id] || BookOpen,
+        count: allArticles.filter(article => article.category === id).length,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'vi')),
   ];
 
   const [searchParams] = useSearchParams();
@@ -864,6 +875,11 @@ export const KnowledgePage = () => {
                   <h2 className="text-base font-bold text-slate-900 leading-snug">
                     {readingArticle.title}
                   </h2>
+                  {readingArticle.isSampleUnapproved && (
+                    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
+                      Tài liệu này là bản mẫu đang chờ phê duyệt, chưa phải quy trình chính thức.
+                    </div>
+                  )}
                 </div>
                 <button
                   type="button"

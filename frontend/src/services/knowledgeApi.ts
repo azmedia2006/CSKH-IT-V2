@@ -12,6 +12,7 @@ export interface Article {
   content: string;
   steps: string[];
   isCustom?: boolean;
+  isSampleUnapproved?: boolean;
 }
 
 export interface FAQItem {
