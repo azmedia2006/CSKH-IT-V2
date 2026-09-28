@@ -122,9 +122,9 @@ export const DashboardPage = () => {
   }
 
   const statusLabelMap: Record<string, { label: string; color: string }> = {
-    NEW: { label: 'Chờ xử lý', color: '#4f46e5' },
+    NEW: { label: 'Chờ nhân viên xử lý', color: '#4f46e5' },
     PROCESSING: { label: 'Đang xử lý', color: '#f59e0b' },
-    WAITING_CUSTOMER: { label: 'Chờ khách hàng', color: '#8b5cf6' },
+    WAITING_CUSTOMER: { label: 'Chờ khách hàng phản hồi', color: '#0ea5e9' },
     RESOLVED: { label: 'Đã giải quyết', color: '#10b981' },
     CLOSED: { label: 'Đã đóng', color: '#64748b' },
     CANCELLED: { label: 'Đã hủy', color: '#ef4444' }

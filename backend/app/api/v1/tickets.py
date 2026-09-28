@@ -619,9 +619,17 @@ async def create_comment(
     )
     db.add(new_comment)
 
-    # Nếu ticket đang ở trạng thái RESOLVED hoặc CLOSED, khách hàng phản hồi sẽ mở lại về PROCESSING
-    if ticket.status in ["RESOLVED", "CLOSED"]:
-        ticket.status = "PROCESSING"
+    # Phản hồi công khai của hai bên quyết định ai đang cần hành động tiếp theo.
+    # Khách hàng phản hồi -> nhân viên cần tiếp tục xử lý; nhân viên phản hồi -> chờ khách hàng.
+    # Ghi chú nội bộ không làm thay đổi trạng thái trao đổi với khách hàng.
+    if not is_internal_flag:
+        if user_is_req:
+            if ticket.status != "PROCESSING":
+                ticket.status = "PROCESSING"
+        else:
+            ticket.status = "WAITING_CUSTOMER"
+            if not ticket.first_responded_at:
+                ticket.first_responded_at = datetime.utcnow()
 
     # Phân tích Sentiment AI trên phản hồi công khai của Requester
     if user_is_req and not is_internal_flag and comment_in.content and comment_in.content.strip():
@@ -1193,5 +1201,4 @@ async def get_user_notifications(
 
     # Giữ tối đa 10 thông báo mới nhất
     return notifications[:10]
-
 

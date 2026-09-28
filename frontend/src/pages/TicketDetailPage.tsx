@@ -549,7 +549,7 @@ export const TicketDetailPage = () => {
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-            <span>Chờ xử lý</span>
+            <span>Chờ nhân viên xử lý</span>
           </span>
         );
       case 'PROCESSING':
@@ -563,7 +563,7 @@ export const TicketDetailPage = () => {
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 shadow-2xs shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-            <span>Chờ khách phản hồi</span>
+            <span>Chờ khách hàng phản hồi</span>
           </span>
         );
       case 'RESOLVED':
@@ -1303,7 +1303,7 @@ export const TicketDetailPage = () => {
                           onChange={(e) => updateTicketMutation.mutate({ status: e.target.value })}
                           className="w-full text-xs font-medium px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400 cursor-pointer transition-all pr-7 appearance-none"
                         >
-                          <option value="NEW">Chờ xử lý (NEW)</option>
+                          <option value="NEW">Chờ nhân viên xử lý (NEW)</option>
                           <option value="PROCESSING">Đang xử lý (PROCESSING)</option>
                           <option value="WAITING_CUSTOMER">Chờ khách phản hồi (WAITING)</option>
                           <option value="RESOLVED">Đã giải quyết (RESOLVED)</option>

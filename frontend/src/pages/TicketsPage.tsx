@@ -195,7 +195,7 @@ export const TicketsPage = () => {
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-2xs whitespace-nowrap">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-            <span>Chờ xử lý</span>
+            <span>Chờ nhân viên xử lý</span>
           </span>
         );
       case 'PROCESSING':
@@ -209,7 +209,7 @@ export const TicketsPage = () => {
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-sky-50 text-sky-700 border border-sky-200/80 shadow-2xs whitespace-nowrap">
             <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-            <span>Chờ phản hồi</span>
+            <span>Chờ khách hàng phản hồi</span>
           </span>
         );
       case 'RESOLVED':
