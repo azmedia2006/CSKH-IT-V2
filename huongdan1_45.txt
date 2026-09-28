@@ -1,0 +1,124 @@
+HƯỚNG DẪN CHẠY WEBSITE AZMEDIA247.COM — CSKH-IT-V2
+Ngày triển khai: 28/09/2026
+Repository: https://github.com/azmedia2006/CSKH-IT-V2
+
+1. VỊ TRÍ TRIỂN KHAI
+
+Code đang chạy nằm tại:
+/root/CSKH/releases/v2-20260928
+
+Vào thư mục bằng lệnh:
+cd /root/CSKH/releases/v2-20260928
+
+2. CÁC FILE CẤU HÌNH TRÊN SERVER
+
+- compose.production.yml: cấu hình Docker cho website đang chạy.
+- deploy.env: biến môi trường triển khai, chứa thông tin bí mật.
+- nginx.production.conf: cấu hình domain, API và frontend đã build.
+- backend/.env: cấu hình riêng của backend.
+- ssl/: chứng chỉ và khóa TLS.
+
+Các file triển khai và bí mật trên chỉ được lưu tại server; chúng không
+đầy đủ trong repository. Hướng dẫn này áp dụng cho server hiện tại,
+không phải quy trình cài mới trên một máy trống.
+Không đưa deploy.env, backend/.env hoặc khóa TLS lên GitHub.
+
+3. BUILD FRONTEND
+
+cd /root/CSKH/releases/v2-20260928/frontend
+npm ci --no-audit --no-fund
+npm run build
+cd ..
+
+Kết quả build nằm trong frontend/dist và được Nginx phục vụ trực tiếp.
+Không cần chạy npm run dev để phục vụ website production.
+Build thành công sẽ cập nhật tài nguyên đang được website sử dụng.
+
+4. KHỞI ĐỘNG CÁC DỊCH VỤ
+
+cd /root/CSKH/releases/v2-20260928
+
+Khởi động database trước:
+docker compose --env-file deploy.env -f compose.production.yml -p cskh-v2 up -d v2-db
+
+Kiểm tra database sẵn sàng (phải báo accepting connections):
+docker exec cskh-v2-db pg_isready -U postgres
+
+Khởi động backend:
+docker compose --env-file deploy.env -f compose.production.yml -p cskh-v2 up -d v2-backend
+
+Kiểm tra backend; chờ rồi thử lại nếu dịch vụ đang khởi động:
+curl -fsS http://127.0.0.1:18000/health
+
+Khởi động Nginx:
+docker compose --env-file deploy.env -f compose.production.yml -p cskh-v2 up -d v2-nginx
+
+Tên container:
+- cskh-v2-db: PostgreSQL có pgvector.
+- cskh-v2-backend: API backend.
+- cskh-v2-nginx: web server cổng 80 và 443.
+- cskh-redis-1: Redis dùng lại từ hệ thống trước.
+
+Cấu hình này dùng mạng Docker cskh_default và image cskh-backend:latest
+đã có trên server. Backend V2 được mount từ thư mục backend của release.
+Lệnh up -d không tự build lại image hay cài thêm thư viện Python.
+
+5. KIỂM TRA WEBSITE VÀ LOG
+
+docker ps
+docker logs --tail 50 cskh-v2-backend
+docker logs --tail 50 cskh-v2-nginx
+docker exec cskh-v2-nginx nginx -t
+curl -fsS http://127.0.0.1:18000/health
+curl -I https://azmedia247.com
+curl -fsS -o /dev/null -w '%{http_code}\n' https://azmedia247.com/api/v1/openapi.json
+
+Truy cập:
+- Website: https://azmedia247.com
+- Đăng nhập: https://azmedia247.com/login
+- Tài liệu API: https://azmedia247.com/docs
+
+6. KHỞI ĐỘNG LẠI SAU KHI SỬA CODE BACKEND
+
+docker restart cskh-v2-backend
+
+Chờ backend sẵn sàng rồi kiểm tra:
+curl -fsS http://127.0.0.1:18000/health
+
+Nếu sửa requirements.txt thì cần chuẩn bị image backend mới có các
+thư viện tương ứng; chỉ restart sẽ không cài các thư viện mới.
+
+7. NẠP LẠI CẤU HÌNH NGINX
+
+docker exec cskh-v2-nginx nginx -t && docker exec cskh-v2-nginx nginx -s reload
+
+Nếu đã thay hoặc tạo lại container backend, nạp lại Nginx sau khi
+backend sẵn sàng để cập nhật địa chỉ upstream.
+
+8. DỮ LIỆU VÀ SAO LƯU
+
+Khi chuyển từ bản cũ, dữ liệu đã được chuyển từ MySQL sang PostgreSQL
+và đối chiếu: 17 tài khoản, 8 ticket, 7 bình luận, 8 AI log,
+6 danh mục, 4 vai trò và 4 chính sách SLA.
+Đây là số liệu tại thời điểm chuyển đổi, không phải số liệu hiện tại.
+
+Volume PostgreSQL: cskh-v2_v2_pgdata
+
+Các bản sao lưu lúc triển khai:
+/root/CSKH/backups/pre-v2-20260928.tar.gz
+/root/CSKH/backups/cutover-v2-20260928.sql
+/root/CSKH/backups/v2-post-cutover-20260928.dump
+
+Code cũ vẫn nằm tại /root/CSKH/CSKH.
+Các container frontend/backend/nginx cũ đã dừng.
+MySQL cũ vẫn được giữ lại.
+
+Không chạy lại script chuyển dữ liệu khi chỉ khởi động website:
+script này xóa dữ liệu đích trước khi nhập lại dữ liệu MySQL cũ.
+Không chạy docker compose down -v vì sẽ xóa volume dữ liệu.
+
+Thông tin vận hành chi tiết trên server:
+/root/CSKH/ACTIVE_DEPLOYMENT.md
+
+Rollback cần đối chiếu các dữ liệu mới phát sinh trên PostgreSQL trước;
+quay về MySQL cũ sẽ không tự mang theo các thay đổi sau khi chuyển đổi.
