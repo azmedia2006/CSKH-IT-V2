@@ -156,7 +156,9 @@ export const TicketsPage = () => {
 
   const { data: tickets = [], refetch, isFetching, isLoading } = useQuery({
     queryKey: ['tickets'],
-    queryFn: () => ticketApi.getTickets()
+    queryFn: () => ticketApi.getTickets(),
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true
   });
 
   const handleCopyCode = (e: React.MouseEvent, code: string) => {
