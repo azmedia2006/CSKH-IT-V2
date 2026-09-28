@@ -63,7 +63,7 @@ class Settings(BaseSettings):
 
     # GitHub Integration
     GITHUB_TOKEN: str | None = None
-    GITHUB_DEFAULT_REPO: str = "azmedia2006/CSKH-IT"
+    GITHUB_DEFAULT_REPO: str = "azmedia2006/CSKH-IT-V2"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
