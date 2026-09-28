@@ -2,15 +2,22 @@ version: '3.8'
 
 services:
   db:
-    image: ankane/pgvector:v0.5.1
+    image: mysql:8.0
+    command: ["--default-authentication-plugin=mysql_native_password"]
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: servicedesk
+      MYSQL_ROOT_PASSWORD: local-root-password
+      MYSQL_DATABASE: servicedesk
+      MYSQL_USER: cskh
+      MYSQL_PASSWORD: local-dev-password
     ports:
-      - "5432:5432"
+      - "3306:3306"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - mysqldata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-plocal-root-password"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   redis:
     image: redis:7-alpine
@@ -28,15 +35,17 @@ services:
     volumes:
       - ./backend:/app
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/servicedesk
+      - DATABASE_URL=mysql+aiomysql://cskh:local-dev-password@db:3306/servicedesk
       - REDIS_URL=redis://redis:6379/0
       - HOST=0.0.0.0
       - PORT=8000
       - JWT_SECRET_KEY=super-secret-key-for-local-dev
       - AI_PROVIDER=openai
     depends_on:
-      - redis
-      - db
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
 
   frontend:
     build:
@@ -67,5 +76,5 @@ services:
       - backend
 
 volumes:
-  pgdata:
+  mysqldata:
   redisdata:

@@ -44,7 +44,7 @@ Hệ thống áp dụng luồng phân định rõ ràng giữa người gửi y�
 - Hoặc môi trường phát triển cục bộ:
   - **Python 3.11+**
   - **Node.js 20+ & npm**
-  - **MySQL 8.0+ / MariaDB** hoặc **PostgreSQL**
+  - **MySQL 8.0+**
   - **Redis Server 7+**
 
 ---

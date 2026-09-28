@@ -142,7 +142,7 @@ function formatDateHeader(dateStr: string): string {
 }
 
 export const CommitsPage: React.FC = () => {
-  const selectedRepo = 'azmedia2006/CSKH-IT-V2';
+  const selectedRepo = 'azmedia2006/CSKH-IT';
   const selectedBranch = 'main';
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterType, setFilterType] = useState<string>('all');
@@ -280,7 +280,7 @@ export const CommitsPage: React.FC = () => {
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span>GitHub Synchronized (Live)</span>
                 <span className="text-emerald-400">•</span>
-                <span className="font-mono text-[11px] text-emerald-800">azmedia2006/CSKH-IT-V2</span>
+                <span className="font-mono text-[11px] text-emerald-800">azmedia2006/CSKH-IT</span>
               </div>
 
               <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">

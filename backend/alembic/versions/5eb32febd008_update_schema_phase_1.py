@@ -23,8 +23,7 @@ def upgrade() -> None:
     op.alter_column('ai_logs', 'pii_detected',
                existing_type=sa.VARCHAR(length=255),
                type_=sa.Boolean(),
-               existing_nullable=True,
-               postgresql_using='pii_detected::boolean')
+               existing_nullable=True)
     op.add_column('tickets', sa.Column('is_escalated', sa.Boolean(), nullable=True))
     op.alter_column('tickets', 'category_id',
                existing_type=sa.VARCHAR(length=36),

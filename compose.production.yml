@@ -1,0 +1,75 @@
+services:
+  v2-db:
+    profiles: [legacy-postgresql]
+    image: ankane/pgvector:v0.5.1
+    container_name: cskh-v2-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: servicedesk
+    volumes:
+      - v2_pgdata:/var/lib/postgresql/data
+    networks: [production]
+  v2-mysql:
+    image: mysql:8.0
+    container_name: cskh-v2-mysql
+    restart: unless-stopped
+    command: ["--default-authentication-plugin=mysql_native_password"]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: servicedesk
+      MYSQL_USER: cskh
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - v2_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks: [production]
+  v2-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cskh-v2-backend
+    restart: unless-stopped
+    working_dir: /app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - ./backend:/app
+    depends_on:
+      v2-mysql:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql+aiomysql://cskh:${MYSQL_PASSWORD}@v2-mysql:3306/servicedesk
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      DEBUG: "false"
+      HOST: 0.0.0.0
+      PORT: 8000
+    ports:
+      - "127.0.0.1:18000:8000"
+    networks: [production]
+  v2-nginx:
+    image: nginx:alpine
+    container_name: cskh-v2-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.production.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
+    networks: [production]
+
+volumes:
+  v2_pgdata:
+  v2_mysql_data:
+    name: cskh_v2_mysql_data
+networks:
+  production:
+    external: true
+    name: cskh_default

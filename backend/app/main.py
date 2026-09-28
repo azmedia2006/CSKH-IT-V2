@@ -15,102 +15,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print("[Redis] Pool init warning:", e)
         
-    # Auto-ensure database columns exist (Idempotent schema migration)
+    # Create any missing model tables in a database-dialect-neutral way.
     try:
         from app.core.database import engine
-        from sqlalchemy import text
-        async with engine.begin() as conn:
-            await conn.execute(text("""
-                INSERT INTO categories (id, name, code, description, created_at, updated_at)
-                VALUES ('a0929d53-6022-54d9-bdad-bc1dc67a05f4', 'Bảo mật & 2FA', 'SECURITY', 'Tài liệu bảo mật và xác thực hai yếu tố', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                ON CONFLICT (code) DO NOTHING
-            """))
-            await conn.execute(text("ALTER TABLE knowledge_base ADD COLUMN IF NOT EXISTS summary TEXT;"))
-            await conn.execute(text("ALTER TABLE knowledge_base ADD COLUMN IF NOT EXISTS steps JSON;"))
-            await conn.execute(text("ALTER TABLE knowledge_base ADD COLUMN IF NOT EXISTS badge VARCHAR(100);"))
-            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS support_level VARCHAR(10);"))
-            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS skill_group VARCHAR(50);"))
-            await conn.execute(text("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS support_level VARCHAR(10) DEFAULT 'L1';"))
-            await conn.execute(text("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS risk_flag VARCHAR(20) DEFAULT 'NORMAL';"))
-            await conn.execute(text("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS sentiment VARCHAR(20);"))
-            await conn.execute(text("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS sentiment_score FLOAT;"))
-            await conn.execute(text("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS sentiment_reason TEXT;"))
-            await conn.execute(text("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS sentiment_evidence TEXT;"))
-            await conn.execute(text("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS escalation_status VARCHAR(50) DEFAULT 'NONE';"))
-            await conn.execute(text("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS escalated_at TIMESTAMP;"))
-            await conn.execute(text("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS escalation_reason TEXT;"))
-            await conn.execute(text("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS previous_agent_id VARCHAR(36);"))
-            await conn.execute(text("ALTER TABLE attachments ADD COLUMN IF NOT EXISTS uploader_id VARCHAR(36);"))
-            await conn.execute(text("ALTER TABLE attachments ADD COLUMN IF NOT EXISTS file_path VARCHAR(1024);"))
-            await conn.execute(text("ALTER TABLE attachments ADD COLUMN IF NOT EXISTS file_type VARCHAR(100);"))
-            await conn.execute(text("ALTER TABLE attachments ADD COLUMN IF NOT EXISTS file_size INTEGER;"))
-            await conn.execute(text("ALTER TABLE attachments ALTER COLUMN file_url DROP NOT NULL;"))
-            await conn.execute(text("ALTER TABLE attachments ALTER COLUMN file_size_kb DROP NOT NULL;"))
+        from app.models import BaseModel
 
-            # Ensure pgvector extension and RAG tables
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
-            await conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS rag_documents (
-                    id VARCHAR(36) PRIMARY KEY,
-                    filename VARCHAR(255) NOT NULL,
-                    title VARCHAR(255) NOT NULL,
-                    file_path VARCHAR(500) NOT NULL,
-                    file_hash VARCHAR(64) NOT NULL,
-                    version VARCHAR(50) DEFAULT '1.0-SAMPLE',
-                    status VARCHAR(50) DEFAULT 'SAMPLE_NEEDS_APPROVAL',
-                    owner VARCHAR(255) DEFAULT 'Phòng CNTT - IT Service Desk',
-                    designated_signer VARCHAR(255) DEFAULT 'Đoàn Minh Quân (Chờ xác nhận)',
-                    effective_date VARCHAR(50) DEFAULT 'Chưa ban hành (Chờ ký duyệt)',
-                    review_date VARCHAR(50) DEFAULT '27/03/2027',
-                    chunk_count INTEGER DEFAULT 0,
-                    metadata_json JSON,
-                    uploaded_by VARCHAR(36),
-                    is_active BOOLEAN DEFAULT TRUE,
-                    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
-                );
-            """))
-            await conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS rag_chunks (
-                    id VARCHAR(36) PRIMARY KEY,
-                    document_id VARCHAR(36) NOT NULL REFERENCES rag_documents(id) ON DELETE CASCADE,
-                    article_id VARCHAR(50) NOT NULL,
-                    title VARCHAR(255) NOT NULL,
-                    category VARCHAR(50) NOT NULL,
-                    audience VARCHAR(50) NOT NULL DEFAULT 'ALL',
-                    visibility VARCHAR(50) NOT NULL DEFAULT 'PUBLIC',
-                    status VARCHAR(50) NOT NULL DEFAULT 'SAMPLE_NEEDS_APPROVAL',
-                    version VARCHAR(50) DEFAULT '1.0-SAMPLE',
-                    owner VARCHAR(255),
-                    effective_date VARCHAR(50),
-                    review_date VARCHAR(50),
-                    chunk_index INTEGER DEFAULT 0,
-                    content TEXT NOT NULL,
-                    embedding vector(1536),
-                    metadata_json JSON,
-                    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
-                );
-            """))
-            await conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS rag_audit_logs (
-                    id VARCHAR(36) PRIMARY KEY,
-                    action VARCHAR(50) NOT NULL,
-                    actor_id VARCHAR(36),
-                    actor_email VARCHAR(255),
-                    actor_role VARCHAR(50),
-                    document_id VARCHAR(36),
-                    article_id VARCHAR(50),
-                    details JSON,
-                    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
-                );
-            """))
-            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_rag_chunks_article_id ON rag_chunks(article_id);"))
-            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_rag_chunks_visibility ON rag_chunks(visibility);"))
-            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_rag_chunks_category ON rag_chunks(category);"))
-            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_rag_chunks_doc_id ON rag_chunks(document_id);"))
-        print("[Database] Schema check: users, tickets, and RAG vector tables ensured.")
+        async with engine.begin() as conn:
+            await conn.run_sync(BaseModel.metadata.create_all)
+        print("[Database] Schema check: application tables ensured.")
     except Exception as e:
         print("[Database] Schema migration note:", e)
 

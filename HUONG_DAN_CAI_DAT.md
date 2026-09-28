@@ -11,7 +11,7 @@ Hệ thống quản lý hỗ trợ khách hàng và dịch vụ nội bộ (IT S
 - Hoặc nếu chạy thủ công:
   - **Python 3.11+**
   - **Node.js 20+ & npm**
-  - **PostgreSQL 15+** (có cài extension `pgvector`)
+  - **MySQL 8.0+**
   - **Redis Server**
 
 ---
@@ -28,7 +28,7 @@ cd d:\du_an\CSKH
 docker compose up -d --build
 ```
 > Lệnh này sẽ tự động tải và khởi chạy 4 containers:
-> 1. `cskh-db-1`: PostgreSQL + pgvector (Port 5432)
+> 1. `cskh-db-1`: MySQL 8.0 (Port 3306)
 > 2. `cskh-redis-1`: Redis Cache & Blacklist (Port 6379)
 > 3. `cskh-backend-1`: FastAPI Backend (Port 8000)
 > 4. `cskh-frontend-1`: React + Vite + Tailwind (Port 5173)
@@ -111,7 +111,7 @@ Nếu muốn tích hợp API Key AI thật (Google Gemini hoặc OpenAI), tạo/
 
 ```ini
 # Cấu hình Database & Redis
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/servicedesk
+DATABASE_URL=mysql+aiomysql://cskh:local-dev-password@localhost:3306/servicedesk
 REDIS_URL=redis://localhost:6379/0
 
 # Bảo mật JWT

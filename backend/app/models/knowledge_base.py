@@ -9,11 +9,12 @@ class KnowledgeBase(BaseModel):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
-    summary = Column(Text, nullable=True)
-    steps = Column(JSON, nullable=True)
-    badge = Column(String(100), nullable=True)
     category_id = Column(String(36), ForeignKey("categories.id"), nullable=False)
     embedding = Column(JSON, nullable=True)
     is_published = Column(Boolean, default=True, nullable=False)
+    # Preserve existing knowledge metadata while adopting the upstream model.
+    summary = Column(Text, nullable=True)
+    steps = Column(JSON, nullable=True)
+    badge = Column(String(100), nullable=True)
 
     category = relationship("Category", back_populates="kb_articles")

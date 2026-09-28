@@ -15,6 +15,9 @@ class Attachment(BaseModel):
     file_path = Column(String(1024), nullable=False)
     file_type = Column(String(100), nullable=True)   # MIME type e.g. image/png
     file_size = Column(Integer, nullable=False)       # bytes
+    # Legacy fields are retained during the PostgreSQL-to-MySQL data migration.
+    file_url = Column(String(1024), nullable=True)
+    file_size_kb = Column(Integer, nullable=True)
 
     ticket = relationship("Ticket", back_populates="attachments")
     comment = relationship("Comment", back_populates="attachments")

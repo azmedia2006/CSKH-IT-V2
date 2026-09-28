@@ -9,7 +9,7 @@ import {
   BookOpen, Search, Ticket as TicketIcon, Sparkles, HelpCircle, 
   ChevronRight, ChevronLeft, Bot, ArrowRight, Printer,
   Shield, Cpu, Wifi, Lock, X, Check, ThumbsUp, ThumbsDown, Copy,
-  Plus, Trash2, Pencil, ChevronDown, ChevronUp, FileText, CheckCircle2, MessageCircleQuestion,
+  Plus, Trash2, ChevronDown, ChevronUp, FileText, CheckCircle2, MessageCircleQuestion,
   Eye
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -27,7 +27,6 @@ interface Article {
   content: string;
   steps: string[];
   isCustom?: boolean;
-  isSampleUnapproved?: boolean;
 }
 
 interface FAQItem {
@@ -36,6 +35,143 @@ interface FAQItem {
   question: string;
   answer: string;
 }
+
+const DEFAULT_ARTICLES: Article[] = [
+  {
+    "id": 1,
+    "category": "DEVICE",
+    "categoryLabel": "Thiết bị & Máy in",
+    "title": "Hướng dẫn cài đặt Driver máy in văn phòng và kết nối qua mạng IP nội bộ",
+    "desc": "Các bước thêm máy in Canon / HP / Ricoh trên Windows 10/11 và macOS mà không cần đĩa cài.",
+    "views": "3.5k lượt xem",
+    "time": "Cập nhật 1 ngày trước",
+    "badge": "Phổ biến",
+    "content": "Tất cả các tầng văn phòng của AZ Media 247 đều được trang bị máy in mạng đa năng tốc độ cao. Nhân viên có thể tự cài đặt theo địa chỉ IP máy in của tầng mình mà không cần gọi IT.",
+    "steps": [
+      "Vào Windows Settings > Devices > Printers & Scanners > Chọn 'Add a printer or scanner'.",
+      "Chọn 'The printer that I want isn't listed' > Chọn 'Add a printer using an IP address or hostname'.",
+      "Nhập IP máy in văn phòng (Tầng 1: 192.168.1.200, Tầng 2: 192.168.1.201, Tầng 3: 192.168.1.202).",
+      "Chọn Driver phù hợp (Canon Generic Plus UFR II hoặc HP Universal Print Driver) và in trang kiểm tra (Print Test Page)."
+    ]
+  },
+  {
+    "id": 2,
+    "category": "DEVICE",
+    "categoryLabel": "Thiết bị & Máy in",
+    "title": "Xử lý lỗi máy in báo Offline hoặc kẹt giấy (Paper Jam)",
+    "desc": "Cách reset dịch vụ Print Spooler và gỡ kẹt giấy an toàn không làm rách bao lụa.",
+    "views": "2.1k lượt xem",
+    "time": "Cập nhật 3 ngày trước",
+    "badge": "Khắc phục nhanh",
+    "content": "Lỗi máy in báo Offline thường xảy ra khi hàng đợi in (Print Queue) bị treo hoặc khay giấy bị lệch cảm biến.",
+    "steps": [
+      "Mở cửa sổ Run (Win + R), gõ services.msc, tìm dịch vụ 'Print Spooler' > Nhấp chuột phải chọn 'Restart'.",
+      "Kiểm tra khay nạp giấy xem giấy có bị ẩm, nhăn hoặc đặt quá vạch giới hạn MAX không.",
+      "Nếu máy báo kẹt giấy (Jam in cartridge area), mở nắp hông theo chiều mũi tên, nhẹ nhàng rút giấy kẹt theo chiều quay của trục cuốn (tuyệt đối không giật ngược chiều).",
+      "Đóng chặt nắp máy in, nhấn nút Resume/OK trên máy để tiếp tục in."
+    ]
+  },
+  {
+    "id": 3,
+    "category": "AUTH",
+    "categoryLabel": "Tài khoản & Xác thực",
+    "title": "Hướng dẫn khôi phục mật khẩu tài khoản nội bộ AZ Media 247",
+    "desc": "Các bước reset mật khẩu qua email công ty và kích hoạt lại ứng dụng xác thực nhanh chóng.",
+    "views": "4.2k lượt xem",
+    "time": "Cập nhật hôm nay",
+    "badge": "Phổ biến",
+    "content": "Để bảo vệ an toàn thông tin theo chuẩn ITIL & ISO 27001 của AZ Media 247, mật khẩu tài khoản cần có độ phức tạp cao và cập nhật định kỳ.",
+    "steps": [
+      "Truy cập cổng đăng nhập nội bộ tại azmedia247.com/login và nhấn vào 'Quên mật khẩu'.",
+      "Nhập địa chỉ email công vụ của bạn để hệ thống gửi mã OTP xác thực khôi phục qua hòm thư.",
+      "Nhập mã OTP 6 số nhận được và thiết lập mật khẩu mới (tối thiểu 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt).",
+      "Đăng nhập lại trên các ứng dụng liên kết (Outlook, Slack, Teams, VPN) với mật khẩu mới vừa đổi."
+    ]
+  },
+  {
+    "id": 4,
+    "category": "NETWORK",
+    "categoryLabel": "Mạng & VPN",
+    "title": "Cách kết nối OpenVPN khi làm việc từ xa (Work from Home - WFH)",
+    "desc": "Cài đặt cấu hình file .ovpn, xác thực 2 bước và xử lý lỗi không truy cập được server nội bộ.",
+    "views": "3.8k lượt xem",
+    "time": "Cập nhật 2 ngày trước",
+    "badge": "Quan trọng",
+    "content": "Tất cả nhân viên làm việc từ xa (WFH) bắt buộc phải bật OpenVPN trước khi truy cập tài nguyên cơ sở dữ liệu, file server và CRM nội bộ của AZ Media 247.",
+    "steps": [
+      "Tải ứng dụng OpenVPN Client phiên bản tương thích với hệ điều hành của bạn (Windows / macOS / Linux).",
+      "Nhập file cấu hình vpn-azmedia247.ovpn được cấp bởi phòng IT ServiceDesk.",
+      "Nhập tài khoản đăng nhập và mã Authenticator OTP khi kết nối.",
+      "Kiểm tra biểu tượng OpenVPN chuyển sang màu xanh lá và truy cập thử cổng thông tin nội bộ."
+    ]
+  },
+  {
+    "id": 5,
+    "category": "SECURITY",
+    "categoryLabel": "Bảo mật & 2FA",
+    "title": "Kích hoạt xác thực 2 yếu tố (2FA) bằng Google Authenticator",
+    "desc": "Bảo mật tài khoản với 2FA và lưu trữ mã khôi phục dự phòng an toàn.",
+    "views": "1.9k lượt xem",
+    "time": "Cập nhật 3 ngày trước",
+    "badge": "Bảo mật",
+    "content": "Xác thực 2 lớp (2FA) giúp ngăn chặn 99.9% nguy cơ bị tấn công chiếm đoạt tài khoản ngay cả khi mật khẩu bị lộ lọt.",
+    "steps": [
+      "Tải ứng dụng Google Authenticator hoặc Microsoft Authenticator trên điện thoại thông minh.",
+      "Đăng nhập tài khoản > Vào mục 'Hồ sơ cá nhân' > Chọn tab 'Bảo mật' > Nhấn 'Bật xác thực 2 bước'.",
+      "Mở ứng dụng trên điện thoại và quét mã QR hiển thị trên màn hình máy tính.",
+      "Lưu lại 5 mã dự phòng (Backup Codes) vào nơi an toàn đề phòng trường hợp mất hoặc đổi điện thoại."
+    ]
+  },
+  {
+    "id": 6,
+    "category": "SOFTWARE",
+    "categoryLabel": "Phần mềm & Cấp quyền",
+    "title": "Quy trình xin cấp bản quyền phần mềm Microsoft 365, Adobe & JetBrains",
+    "desc": "Hướng dẫn gửi ticket yêu cầu cấp key và thời gian phê duyệt tiêu chuẩn của IT Helpdesk.",
+    "views": "2.4k lượt xem",
+    "time": "Cập nhật 5 ngày trước",
+    "badge": "Bản quyền",
+    "content": "AZ Media 247 trang bị đầy đủ bản quyền phần mềm chuyên dụng cho nhân sự chính thức phục vụ công việc thiết kế, lập trình và truyền thông.",
+    "steps": [
+      "Vào mục 'Tạo Ticket' trên hệ thống ServiceDesk, chọn danh mục 'Phần mềm & Cấp quyền'.",
+      "Chọn gói phần mềm cần cấp (Microsoft 365 Business, Adobe Creative Cloud, JetBrains All Products, Figma Enterprise).",
+      "Đính kèm xác nhận (Approval) qua email hoặc tin nhắn của Trưởng bộ phận phụ trách.",
+      "Đội ngũ IT Support sẽ kiểm tra license pool, cấp tài khoản và bàn giao key kích hoạt trong vòng 2-4 giờ làm việc."
+    ]
+  },
+  {
+    "id": 7,
+    "category": "NETWORK",
+    "categoryLabel": "Mạng & VPN",
+    "title": "Khắc phục sự cố mạng Wifi văn phòng chập chờn hoặc không nhận IP",
+    "desc": "Các lệnh giải phóng IP (ipconfig /release) và flush DNS trên máy trạm Windows / macOS.",
+    "views": "3.1k lượt xem",
+    "time": "Cập nhật 1 tuần trước",
+    "content": "Sự cố kết nối Wifi văn phòng thường do xung đột địa chỉ IP cục bộ từ DHCP hoặc bộ nhớ đệm DNS cũ của máy tính.",
+    "steps": [
+      "Tắt Wifi trên thiết bị, chờ 5 giây rồi bật lại và chọn mạng 'AZMedia247-Enterprise-5G'.",
+      "Trên Windows: Mở Command Prompt (cmd) dưới quyền Run as Administrator, gõ: 'ipconfig /flushdns' rồi gõ tiếp 'ipconfig /renew'.",
+      "Trên macOS: Mở Terminal gõ lệnh: 'sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder' rồi nhập mật khẩu máy.",
+      "Nếu vẫn không vào được mạng, khởi động lại máy hoặc liên hệ ngay hotline IT Tầng: Ext 101."
+    ]
+  },
+  {
+    "id": 8,
+    "category": "SOFTWARE",
+    "categoryLabel": "Phần mềm & Cấp quyền",
+    "title": "Cài đặt và cấu hình chứng chỉ bảo mật SSL nội bộ trên trình duyệt",
+    "desc": "Tải file .crt và cài đặt vào Trusted Root Certification Authorities để loại bỏ cảnh báo trình duyệt.",
+    "views": "1.2k lượt xem",
+    "time": "Cập nhật 2 tuần trước",
+    "content": "Hướng dẫn loại bỏ thông báo cảnh báo bảo mật 'Kết nối của bạn không phải là kết nối riêng tư' khi truy cập các hệ thống quản trị nội bộ (*.azmedia247.com).",
+    "steps": [
+      "Tải chứng chỉ bảo mật gốc 'AZMediaRootCA.crt' từ cổng tài nguyên nội bộ.",
+      "Nhấp đúp chuột vào file certificate vừa tải > Chọn 'Install Certificate...'.",
+      "Chọn 'Local Machine' > Chọn 'Place all certificates in the following store' > Chọn thư mục 'Trusted Root Certification Authorities'.",
+      "Nhấn Next > Finish > Khởi động lại toàn bộ trình duyệt Chrome hoặc Edge để áp dụng chứng chỉ mới."
+    ]
+  }
+];
 
 export const KnowledgePage = () => {
   const cachedRole = localStorage.getItem("user_role");
@@ -193,7 +329,6 @@ export const KnowledgePage = () => {
 
   // Modal State for adding new article
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState('DEVICE');
   const [newDesc, setNewDesc] = useState('');
@@ -202,30 +337,20 @@ export const KnowledgePage = () => {
   const [stepInputs, setStepInputs] = useState<string[]>(['', '']);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const { data: serverArticles, refetch: refetchArticles, isLoading: isArticlesLoading, isError: hasArticlesError } = useQuery({
+  const { data: serverArticles } = useQuery({
     queryKey: ['knowledgeArticles'],
     queryFn: knowledgeApi.getArticles,
   });
-  const baseArticles = serverArticles ?? [];
+  const baseArticles = serverArticles && serverArticles.length > 0 ? serverArticles : DEFAULT_ARTICLES;
   const allArticles: Article[] = [...customArticles, ...baseArticles];
 
-  const categoryIcons: Record<string, typeof BookOpen> = {
-    DEVICE: Printer,
-    AUTH: Lock,
-    NETWORK: Wifi,
-    SOFTWARE: Cpu,
-    SECURITY: Shield,
-  };
   const categories = [
     { id: 'ALL', label: 'Tất cả chủ đề', icon: BookOpen, count: allArticles.length },
-    ...Array.from(new Map(allArticles.map(article => [article.category, article.categoryLabel])).entries())
-      .map(([id, label]) => ({
-        id,
-        label,
-        icon: categoryIcons[id] || BookOpen,
-        count: allArticles.filter(article => article.category === id).length,
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label, 'vi')),
+    { id: 'DEVICE', label: 'Thiết bị & Máy in', icon: Printer, count: allArticles.filter(a => a.category === 'DEVICE').length },
+    { id: 'AUTH', label: 'Tài khoản & Xác thực', icon: Lock, count: allArticles.filter(a => a.category === 'AUTH').length },
+    { id: 'NETWORK', label: 'Mạng & VPN', icon: Wifi, count: allArticles.filter(a => a.category === 'NETWORK').length },
+    { id: 'SOFTWARE', label: 'Phần mềm & Cấp quyền', icon: Cpu, count: allArticles.filter(a => a.category === 'SOFTWARE').length },
+    { id: 'SECURITY', label: 'Bảo mật & 2FA', icon: Shield, count: allArticles.filter(a => a.category === 'SECURITY').length },
   ];
 
   const [searchParams] = useSearchParams();
@@ -327,74 +452,55 @@ export const KnowledgePage = () => {
     setStepInputs(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleCreateArticleSubmit = async (e: React.FormEvent) => {
+  const handleCreateArticleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newDesc.trim()) return;
 
-    const validSteps = stepInputs.map(step => step.trim()).filter(Boolean);
-    const payload = {
+    const catObj = categories.find(c => c.id === newCategory) || categories[1];
+    const validSteps = stepInputs.filter(s => s.trim().length > 0);
+
+    const newArticle: Article = {
+      id: `custom-${Date.now()}`,
       category: newCategory,
+      categoryLabel: catObj.label,
       title: newTitle.trim(),
       desc: newDesc.trim(),
-      badge: newBadge.trim() || undefined,
+      views: '1 lượt xem',
+      time: 'Vừa xong',
+      badge: newBadge.trim() || 'Mới tạo',
       content: newContent.trim() || newDesc.trim(),
-      steps: validSteps.length ? validSteps : ['Liên hệ IT Service Desk để được hỗ trợ.'],
+      steps: validSteps.length > 0 ? validSteps : ['Liên hệ trực tiếp IT Helpdesk để được hướng dẫn chi tiết.'],
+      isCustom: true
     };
 
-    try {
-      if (editingArticle) {
-        await knowledgeApi.updateArticle(editingArticle.id, payload);
-        setToastMessage('Đã cập nhật bài viết trong Kho tri thức.');
-      } else {
-        await knowledgeApi.createArticle(payload);
-        setToastMessage('Đã lưu bài viết vào Kho tri thức.');
-      }
-      await refetchArticles();
-      setEditingArticle(null);
-      setNewTitle('');
-      setNewDesc('');
-      setNewContent('');
-      setNewBadge('Hướng dẫn');
-      setStepInputs(['', '']);
-      setShowAddModal(false);
-      setTimeout(() => setToastMessage(null), 3500);
-    } catch (error: any) {
-      setToastMessage(error.response?.data?.detail || 'Không thể lưu bài viết. Vui lòng thử lại.');
-      setTimeout(() => setToastMessage(null), 4000);
-    }
+    const updated = [newArticle, ...customArticles];
+    setCustomArticles(updated);
+    localStorage.setItem('custom_knowledge_articles', JSON.stringify(updated));
+
+    // Reset Form & Close Modal
+    setNewTitle('');
+    setNewDesc('');
+    setNewContent('');
+    setStepInputs(['', '']);
+    setShowAddModal(false);
+
+    setToastMessage('Đã thêm bài viết mới vào Kho tri thức thành công!');
+    setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const handleEditArticle = (article: Article, event: React.MouseEvent) => {
-    event.stopPropagation();
-    setEditingArticle(article);
-    setNewTitle(article.title);
-    setNewCategory(article.category);
-    setNewDesc(article.desc);
-    setNewBadge(article.badge || '');
-    setNewContent(article.content);
-    setStepInputs(article.steps.length ? article.steps : ['']);
-    setShowAddModal(true);
-  };
-
-  const handleDeleteArticle = async (articleId: number | string, event: React.MouseEvent) => {
-    event.stopPropagation();
+  const handleDeleteArticle = (articleId: number | string, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!confirm('Bạn có chắc chắn muốn xóa bài viết này khỏi Kho tri thức?')) return;
 
-    try {
-      if (String(articleId).startsWith('custom-')) {
-        const updated = customArticles.filter(article => article.id !== articleId);
-        setCustomArticles(updated);
-        localStorage.setItem('custom_knowledge_articles', JSON.stringify(updated));
-      } else {
-        await knowledgeApi.deleteArticle(articleId);
-        await refetchArticles();
-      }
-      if (readingArticle?.id === articleId) setReadingArticle(null);
-      setToastMessage('Đã xóa bài viết khỏi Kho tri thức.');
-    } catch (error: any) {
-      setToastMessage(error.response?.data?.detail || 'Không thể xóa bài viết. Vui lòng thử lại.');
+    const updated = customArticles.filter(a => a.id !== articleId);
+    setCustomArticles(updated);
+    localStorage.setItem('custom_knowledge_articles', JSON.stringify(updated));
+
+    if (readingArticle && readingArticle.id === articleId) {
+      setReadingArticle(null);
     }
-    setTimeout(() => setToastMessage(null), 3500);
+    setToastMessage('Đã xóa bài viết khỏi Kho tri thức.');
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   return (
@@ -454,21 +560,6 @@ export const KnowledgePage = () => {
           </div>
         )}
 
-        {isArticlesLoading ? (
-          <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white text-sm text-slate-500">
-            <div className="h-7 w-7 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600" />
-            <span>Đang tải Kho tri thức…</span>
-          </div>
-        ) : hasArticlesError ? (
-          <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-2xl border border-rose-200 bg-white p-6 text-center">
-            <p className="text-sm font-semibold text-slate-800">Chưa tải được Kho tri thức</p>
-            <p className="text-xs text-slate-500">Kiểm tra kết nối rồi thử tải lại danh sách.</p>
-            <button type="button" onClick={() => void refetchArticles()} className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700">
-              Thử lại
-            </button>
-          </div>
-        ) : (
-          <>
         {/* Search & AI Query Bar */}
         <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs">
           <form onSubmit={handleAskAi} className="flex flex-col sm:flex-row items-center gap-2.5">
@@ -612,12 +703,6 @@ export const KnowledgePage = () => {
                         </span>
                       )}
                       {art.isCustom && canManageArticles && (
-                        <>
-                        {!String(art.id).startsWith('custom-') && (
-                          <button type="button" onClick={(e) => handleEditArticle(art, e)} className="p-1 text-slate-400 hover:text-indigo-600 rounded-md hover:bg-indigo-50 transition-colors" title="Sửa bài viết">
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                        )}
                         <button
                           type="button"
                           onClick={(e) => handleDeleteArticle(art.id, e)}
@@ -626,7 +711,6 @@ export const KnowledgePage = () => {
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
-                        </>
                       )}
                     </div>
                   </div>
@@ -728,9 +812,6 @@ export const KnowledgePage = () => {
 
 
 
-          </>
-        )}
-
         {/* Article Reader Modal using Portal */}
         {readingArticle && createPortal(
           <div className="fixed inset-0 z-[9999] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
@@ -756,11 +837,6 @@ export const KnowledgePage = () => {
                   <h2 className="text-base font-bold text-slate-900 leading-snug">
                     {readingArticle.title}
                   </h2>
-                  {readingArticle.isSampleUnapproved && (
-                    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
-                      Tài liệu này là bản mẫu đang chờ phê duyệt, chưa phải quy trình chính thức.
-                    </div>
-                  )}
                 </div>
                 <button
                   type="button"
@@ -893,7 +969,7 @@ export const KnowledgePage = () => {
                   <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600">
                     <FileText className="w-4 h-4" />
                   </div>
-                  <h3 className="font-bold text-slate-900 text-sm">{editingArticle ? 'Sửa bài viết Kho tri thức' : 'Thêm bài viết mới vào Kho tri thức'}</h3>
+                  <h3 className="font-bold text-slate-900 text-sm">Thêm bài viết mới vào Kho tri thức</h3>
                 </div>
                 <button
                   type="button"
@@ -1008,7 +1084,7 @@ export const KnowledgePage = () => {
                 <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                   <button
                     type="button"
-                    onClick={() => { setShowAddModal(false); setEditingArticle(null); }}
+                    onClick={() => setShowAddModal(false)}
                     className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
                   >
                     Hủy
@@ -1017,7 +1093,7 @@ export const KnowledgePage = () => {
                     type="submit"
                     className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs cursor-pointer"
                   >
-                    {editingArticle ? 'Cập nhật bài viết' : 'Lưu bài viết'}
+                    Lưu bài viết
                   </button>
                 </div>
               </form>

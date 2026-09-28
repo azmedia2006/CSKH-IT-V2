@@ -392,10 +392,6 @@ async def update_ticket(
             ticket.closed_at = now
             if not ticket.resolved_at:
                 ticket.resolved_at = now
-        elif new_status in ["PROCESSING", "WAITING_CUSTOMER"] and current_status in ["RESOLVED", "CLOSED"]:
-            # Mở lại ticket phải xóa mốc hoàn tất cũ để dashboard/SLA không coi là đã giải quyết.
-            ticket.resolved_at = None
-            ticket.closed_at = None
 
     # 7. Xử lý thay đổi cấp hỗ trợ support_level hoặc hạ cấp L2 về L1
     if "support_level" in update_data or "is_escalated" in update_data:
@@ -623,22 +619,9 @@ async def create_comment(
     )
     db.add(new_comment)
 
-    # Phản hồi công khai của hai bên quyết định ai đang cần hành động tiếp theo.
-    # Khách hàng phản hồi -> nhân viên cần tiếp tục xử lý; nhân viên phản hồi -> chờ khách hàng.
-    # Ghi chú nội bộ không làm thay đổi trạng thái trao đổi với khách hàng.
-    if not is_internal_flag:
-        if user_is_req:
-            ticket.status = "PROCESSING"
-            if ticket.resolved_at or ticket.closed_at:
-                ticket.resolved_at = None
-                ticket.closed_at = None
-        else:
-            ticket.status = "WAITING_CUSTOMER"
-            if ticket.resolved_at or ticket.closed_at:
-                ticket.resolved_at = None
-                ticket.closed_at = None
-            if not ticket.first_responded_at:
-                ticket.first_responded_at = datetime.utcnow()
+    # Nếu ticket đang ở trạng thái RESOLVED hoặc CLOSED, khách hàng phản hồi sẽ mở lại về PROCESSING
+    if ticket.status in ["RESOLVED", "CLOSED"]:
+        ticket.status = "PROCESSING"
 
     # Phân tích Sentiment AI trên phản hồi công khai của Requester
     if user_is_req and not is_internal_flag and comment_in.content and comment_in.content.strip():

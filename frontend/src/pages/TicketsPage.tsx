@@ -156,9 +156,7 @@ export const TicketsPage = () => {
 
   const { data: tickets = [], refetch, isFetching, isLoading } = useQuery({
     queryKey: ['tickets'],
-    queryFn: () => ticketApi.getTickets(),
-    refetchInterval: 5000,
-    refetchOnWindowFocus: true
+    queryFn: () => ticketApi.getTickets()
   });
 
   const handleCopyCode = (e: React.MouseEvent, code: string) => {
@@ -197,7 +195,7 @@ export const TicketsPage = () => {
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-2xs whitespace-nowrap">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-            <span>Chờ nhân viên xử lý</span>
+            <span>Mới tạo</span>
           </span>
         );
       case 'PROCESSING':
@@ -211,7 +209,7 @@ export const TicketsPage = () => {
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-sky-50 text-sky-700 border border-sky-200/80 shadow-2xs whitespace-nowrap">
             <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-            <span>Chờ khách hàng phản hồi</span>
+            <span>Chờ phản hồi</span>
           </span>
         );
       case 'RESOLVED':
@@ -423,7 +421,7 @@ export const TicketsPage = () => {
 
             <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-indigo-700">Chờ xử lý & Đang chờ</span>
+                <span className="text-xs font-medium text-indigo-700">Mới tạo & Đang chờ</span>
                 <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
               </div>
               <div className="text-2xl font-bold text-indigo-600">
@@ -480,7 +478,7 @@ export const TicketsPage = () => {
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
-              Chờ xử lý ({tickets.filter(t => t.status === 'NEW').length})
+              Mới tạo ({tickets.filter(t => t.status === 'NEW').length})
             </button>
 
             <button
@@ -651,7 +649,7 @@ export const TicketsPage = () => {
                     <th className="py-3.5 px-4 w-[140px] whitespace-nowrap">Trạng thái</th>
                     <th className="py-3.5 px-4 w-[110px] whitespace-nowrap">{isRequester ? 'Thời gian gửi' : 'Thời gian'}</th>
                     <th className="py-3.5 px-4 w-[150px] whitespace-nowrap">{isRequester ? 'Thời hạn xử lý' : 'Hạn cam kết SLA'}</th>
-                    <th className="sticky right-0 z-20 py-3.5 px-4 w-[150px] whitespace-nowrap text-right bg-slate-50/95 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.35)]">Thao tác</th>
+                    <th className="py-3.5 px-4 w-[120px] whitespace-nowrap text-right">Chi tiết</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700 font-normal">
@@ -784,7 +782,7 @@ export const TicketsPage = () => {
                         </td>
 
                         {/* Detail Action */}
-                        <td className="sticky right-0 z-10 py-3.5 px-4 align-middle text-right whitespace-nowrap bg-white group-hover:bg-indigo-50/40 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.25)]">
+                        <td className="py-3.5 px-4 align-middle text-right whitespace-nowrap">
                           <div className="inline-flex items-center gap-1.5 justify-end">
                             <Link
                               to={`/tickets/${t.id}`}

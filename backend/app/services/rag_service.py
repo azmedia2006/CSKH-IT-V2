@@ -1,6 +1,8 @@
 import os
 import re
 import uuid
+import math
+import json
 import hashlib
 import zipfile
 import logging
@@ -10,7 +12,7 @@ from typing import List, Dict, Any, Optional, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import delete, func, or_, text, case
+from sqlalchemy import delete, func, or_
 from sqlalchemy.orm import selectinload
 
 from app.models.rag import RAGDocument, RAGChunk, RAGAuditLog
@@ -48,6 +50,26 @@ def _get_safe_role(user: Optional[User]) -> str:
 
 
 class RAGService:
+    @staticmethod
+    def _cosine_similarity(left: List[float], right: Any) -> float:
+        """Tính cosine locally để không phụ thuộc pgvector/MySQL vector extensions."""
+        if isinstance(right, str):
+            try:
+                right = json.loads(right)
+            except (TypeError, ValueError):
+                return 0.0
+        if not isinstance(left, (list, tuple)) or not isinstance(right, (list, tuple)):
+            return 0.0
+        size = min(len(left), len(right))
+        if size == 0:
+            return 0.0
+        dot = sum(float(left[i]) * float(right[i]) for i in range(size))
+        left_norm = math.sqrt(sum(float(left[i]) ** 2 for i in range(size)))
+        right_norm = math.sqrt(sum(float(right[i]) ** 2 for i in range(size)))
+        if not left_norm or not right_norm:
+            return 0.0
+        return dot / (left_norm * right_norm)
+
     @staticmethod
     def compute_file_hash(file_path: str) -> str:
         sha256 = hashlib.sha256()
@@ -458,21 +480,8 @@ class RAGService:
         stop_words = {"cho", "tôi", "mình", "làm", "sao", "được", "không", "như", "thế", "nào", "hãy", "cần", "giúp", "với", "các", "một", "trong", "đang", "gặp"}
         raw_words = [w for w in re.findall(r"[\w\-]+", sanitized_query.lower()) if len(w) >= 2 and w not in stop_words]
 
-        # 4. Truy vấn Vector Similarity kết hợp Keyword Match
-        # Sử dụng pgvector cosine distance: (embedding <=> query_vec)
-        # Điểm tương đồng: 1 - cosine_distance
-        cosine_dist_expr = RAGChunk.embedding.cosine_distance(query_vec)
-
-        # Base statement có lọc RBAC
-        stmt = (
-            select(
-                RAGChunk,
-                (1.0 - cosine_dist_expr).label("similarity")
-            )
-            .where(
-                RAGChunk.visibility.in_(allowed_visibilities)
-            )
-        )
+        # 4. Truy vấn hybrid portable: lọc quyền và từ khóa trong DB, tính cosine cục bộ.
+        stmt = select(RAGChunk).where(RAGChunk.visibility.in_(allowed_visibilities))
 
         match_conditions = []
         if code_matches:
@@ -482,19 +491,29 @@ class RAGService:
             match_conditions.append(RAGChunk.title.ilike(f"%{w}%"))
             match_conditions.append(RAGChunk.content.ilike(f"%{w}%"))
 
-        match_conditions.append(cosine_dist_expr < 0.95)
+        match_conditions.append(RAGChunk.embedding.is_not(None))
 
         stmt = stmt.where(or_(*match_conditions))
 
-        # Sắp xếp: ưu tiên tuyệt đối mã bài viết khớp chính xác, sau đó theo độ tương đồng cao nhất
-        order_clauses = []
-        if code_matches:
-            order_clauses.append(case((RAGChunk.article_id.in_(code_matches), 1), else_=0).desc())
-        order_clauses.append(text("similarity DESC"))
-        stmt = stmt.order_by(*order_clauses).limit(top_k * 2)
-
         res = await db.execute(stmt)
-        rows = res.all()
+        candidates = res.scalars().all()
+        rows = []
+        for chunk in candidates:
+            score = cls._cosine_similarity(query_vec, chunk.embedding)
+            has_keyword_match = any(
+                word in f"{chunk.title or ''} {chunk.content or ''}".lower()
+                for word in raw_words[:6]
+            )
+            if score >= 0.05 or has_keyword_match or chunk.article_id in code_matches:
+                rows.append((chunk, score))
+        rows.sort(
+            key=lambda item: (
+                item[0].article_id in code_matches,
+                item[1]
+            ),
+            reverse=True
+        )
+        rows = rows[:top_k * 2]
 
         results = []
         citations = []

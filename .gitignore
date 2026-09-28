@@ -19,6 +19,15 @@ venv/
 ENV/
 env/
 
+# Secrets and local runtime credentials
+.env
+.env.*
+!.env.example
+!**/.env.example
+backend/.env
+deploy.env
+migration*.env
+
 # Logs
 logs/
 *.log
@@ -31,9 +40,3 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
-
-# Local secrets and TLS material
-.env
-.env.*
-!.env.example
-ssl/

@@ -7,9 +7,9 @@ python-multipart==0.0.20
 
 # Database
 sqlalchemy[asyncio]==2.0.36
+# Retained for the one-time import from the previous PostgreSQL deployment.
 asyncpg==0.30.0
 alembic==1.14.1
-pgvector==0.3.6
 
 # Validation & Settings
 pydantic==2.10.4

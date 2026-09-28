@@ -12,7 +12,7 @@ import {
   AlertCircle, RotateCcw, Star, Quote, Lock, Globe, User as UserIcon,
   ShieldCheck, Copy, AlertTriangle, CheckCircle, Zap, ChevronDown, ChevronUp,
   Maximize2, Minimize2, Trash2, Paperclip, Download, Plus, UserCheck, Sparkles,
-  FileText
+  FileText, PanelRightClose, PanelRightOpen
 } from 'lucide-react';
 import { MarkdownView } from '../components/MarkdownView';
 
@@ -107,8 +107,8 @@ export const TicketDetailPage = () => {
   const [replyText, setReplyText] = useState('');
   const [isInternalNote, setIsInternalNote] = useState(false);
   const [isExpandedComposer, setIsExpandedComposer] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
-  const [isTicketInfoCollapsed, setIsTicketInfoCollapsed] = useState(false);
   const [showAiSummary, setShowAiSummary] = useState(false);
   const [showAiTriageModal, setShowAiTriageModal] = useState(false);
   const [aiDraftText, setAiDraftText] = useState<string | null>(null);
@@ -504,10 +504,6 @@ export const TicketDetailPage = () => {
     updateTicketMutation.mutate({ status: 'PROCESSING' });
   };
 
-  const handleAcceptTicket = () => {
-    updateTicketMutation.mutate({ status: 'PROCESSING' });
-  };
-
   const handleCopyCode = () => {
     if (!ticket?.ticket_code) return;
     navigator.clipboard.writeText(ticket.ticket_code);
@@ -537,7 +533,6 @@ export const TicketDetailPage = () => {
   const isAdmin = currentUser?.role_name === 'ADMIN';
   const isTeamLead = currentUser?.role_name === 'TEAM_LEAD';
   const isSupportAgent = currentUser?.role_name === 'SUPPORT_AGENT';
-  const canManageTicketStatus = isAdmin || isTeamLead || isSupportAgent;
 
   // RBAC theo báo cáo UC-03 & TC_BIZ_02: CHỈ TEAM_LEAD được quyền phân công thủ công
   const canAssignAgent = isTeamLead;
@@ -550,7 +545,7 @@ export const TicketDetailPage = () => {
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-            <span>Chờ nhân viên xử lý</span>
+            <span>Mới tạo</span>
           </span>
         );
       case 'PROCESSING':
@@ -564,7 +559,7 @@ export const TicketDetailPage = () => {
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 shadow-2xs shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-            <span>Chờ khách hàng phản hồi</span>
+            <span>Chờ khách phản hồi</span>
           </span>
         );
       case 'RESOLVED':
@@ -658,14 +653,14 @@ export const TicketDetailPage = () => {
 
   return (
     <Layout>
-      <div className="flex flex-col h-[calc(100dvh-64px)] bg-[#f8fafc] overflow-hidden">
+      <div className="flex flex-col h-[calc(100vh-64px)] bg-[#f8fafc] overflow-hidden">
         
         {/* THANH TIÊU ĐỀ TICKET GỌN GÀNG (Chỉ giữ thông tin cần thiết: Quay lại, Mã, Tiêu đề và 1 Trạng thái) */}
-        <header className="bg-white border-b border-slate-200/90 px-4 sm:px-6 py-2.5 shrink-0 flex flex-col items-stretch xl:flex-row xl:items-center justify-between gap-2 z-10 shadow-2xs">
-          <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
+        <header className="bg-white border-b border-slate-200/90 px-4 sm:px-6 py-2.5 shrink-0 flex items-center justify-between gap-3 z-10 shadow-2xs">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
             <Link 
               to="/tickets" 
-              className="inline-flex items-center gap-1.5 justify-center h-8 w-8 sm:w-auto sm:px-2.5 sm:py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer shrink-0"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer shrink-0"
               title="Quay lại danh sách yêu cầu"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -677,10 +672,10 @@ export const TicketDetailPage = () => {
             <button
               type="button"
               onClick={handleCopyCode}
-              className="group inline-flex flex-1 sm:flex-none min-w-0 items-center justify-center gap-1 text-[11px] sm:text-xs font-mono font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-md border border-slate-200 transition-colors cursor-pointer"
+              className="group inline-flex items-center gap-1 text-xs font-mono font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-md border border-slate-200 transition-colors cursor-pointer shrink-0"
               title="Sao chép mã ticket"
             >
-              <span className="truncate">{ticket.ticket_code}</span>
+              <span>{ticket.ticket_code}</span>
               {copiedCode ? (
                 <Check className="w-3 h-3 text-emerald-600" />
               ) : (
@@ -688,24 +683,48 @@ export const TicketDetailPage = () => {
               )}
             </button>
 
-            <span className="hidden sm:inline text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 max-w-full break-words">
+            <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 shrink-0">
               {getCategoryLabel(ticket)}
             </span>
 
             {/* Huy hiệu trạng thái xử lý trực quan ngay cạnh tiêu đề */}
             {renderStatusBadge(ticket.status)}
 
-            <h1 className="w-full xl:w-auto xl:flex-1 text-sm sm:text-base font-semibold text-slate-900 break-words xl:truncate min-w-0" title={ticket.title}>
+            <h1 className="text-sm sm:text-base font-semibold text-slate-900 truncate min-w-0" title={ticket.title}>
               {ticket.title}
             </h1>
 
           </div>
 
           {/* Nút hành động chính */}
-          <div className="flex items-center gap-1.5 sm:gap-2 w-full xl:w-auto shrink-0 min-w-0 [&_button]:min-h-10 [&_button]:justify-center [&_button]:whitespace-nowrap [&_svg]:shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Nút Đóng / Mở bảng thuộc tính bên phải để nhắn tin rộng rãi */}
+            <button
+              type="button"
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer shadow-2xs ${
+                isSidebarCollapsed
+                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
+                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+              }`}
+              title={isSidebarCollapsed ? "Mở bảng thuộc tính ticket" : "Thu gọn bảng thuộc tính để mở rộng khung chat"}
+            >
+              {isSidebarCollapsed ? (
+                <>
+                  <PanelRightOpen className="w-3.5 h-3.5 text-indigo-600" />
+                  <span className="hidden md:inline">Mở thông tin</span>
+                </>
+              ) : (
+                <>
+                  <PanelRightClose className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="hidden md:inline">Thu gọn thông tin</span>
+                </>
+              )}
+            </button>
+
             {/* Các nút hành động xử lý trạng thái ticket */}
-            {canManageTicketStatus && ticket.status === 'RESOLVED' && (
-              <div className="grid grid-cols-2 flex-1 xl:flex-none min-w-0 gap-1.5">
+            {ticket.status === 'RESOLVED' && (
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={handleReopenTicket}
@@ -724,18 +743,17 @@ export const TicketDetailPage = () => {
                   title="Đóng hoàn tất ticket này (CLOSED)"
                 >
                   <Check className="w-3.5 h-3.5" />
-                  <span className="sm:hidden">Đóng</span>
-                  <span className="hidden sm:inline">Đóng ticket</span>
+                  <span>Đóng ticket</span>
                 </button>
               </div>
             )}
 
-            {canManageTicketStatus && ticket.status === 'CLOSED' && (
+            {ticket.status === 'CLOSED' && (
               <button
                 type="button"
-                onClick={handleAcceptTicket}
+                onClick={handleReopenTicket}
                 disabled={updateTicketMutation.isPending}
-                className="inline-flex flex-1 xl:flex-none items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-2xs cursor-pointer disabled:opacity-50"
                 title="Mở lại ticket đã đóng"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -743,21 +761,8 @@ export const TicketDetailPage = () => {
               </button>
             )}
 
-            {canManageTicketStatus && ticket.status === 'NEW' && (
-              <button
-                type="button"
-                onClick={handleReopenTicket}
-                disabled={updateTicketMutation.isPending}
-                className="inline-flex flex-1 xl:flex-none items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-2xs cursor-pointer disabled:opacity-50"
-                title="Tiếp nhận ticket và chuyển sang trạng thái đang xử lý"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Tiếp nhận xử lý</span>
-              </button>
-            )}
-
-            {canManageTicketStatus && (ticket.status === 'PROCESSING' || ticket.status === 'WAITING_CUSTOMER') && (
-              <div className="grid grid-cols-2 flex-1 xl:flex-none min-w-0 gap-1.5">
+            {ticket.status !== 'RESOLVED' && ticket.status !== 'CLOSED' && (
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={handleResolveTicket}
@@ -766,8 +771,7 @@ export const TicketDetailPage = () => {
                   title="Đánh dấu đã giải quyết sự cố (RESOLVED) - Kỹ thuật đã xử lý xong"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="sm:hidden">Giải quyết</span>
-                  <span className="hidden sm:inline">Giải quyết ticket</span>
+                  <span className="hidden sm:inline">Đã giải quyết</span>
                 </button>
                 <button
                   type="button"
@@ -777,8 +781,7 @@ export const TicketDetailPage = () => {
                   title="Đóng hoàn tất ticket (CLOSED)"
                 >
                   <Check className="w-3.5 h-3.5" />
-                  <span className="sm:hidden">Đóng</span>
-                  <span className="hidden sm:inline">Đóng ticket</span>
+                  <span>Đóng ticket</span>
                 </button>
               </div>
             )}
@@ -790,7 +793,7 @@ export const TicketDetailPage = () => {
                 onClick={handleDeleteTicket}
                 disabled={deleteTicketMutation.isPending}
                 title="Xóa vĩnh viễn ticket (Chỉ Quản trị viên)"
-                className="inline-flex shrink-0 items-center gap-1 w-10 sm:w-auto sm:px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-medium border border-rose-200 transition-colors cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-xs font-medium border border-rose-200 transition-colors cursor-pointer disabled:opacity-50"
               >
                 {deleteTicketMutation.isPending ? (
                   <div className="w-3.5 h-3.5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" />
@@ -825,28 +828,15 @@ export const TicketDetailPage = () => {
         )}
 
         {/* BỐ CỤC 2 CỘT: Cột chính (Nội dung & Hội thoại) + Cột phụ (Bảng thuộc tính có thể đóng/mở) */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6 pb-24 sm:pb-24">
-          <div className={`mx-auto transition-all duration-300 ${isTicketInfoCollapsed
-            ? 'max-w-screen-2xl grid grid-cols-1 items-start'
-            : 'max-w-7xl grid grid-cols-1 gap-6 items-start lg:grid-cols-12'
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-6 pb-20">
+          <div className={`mx-auto transition-all duration-300 ${
+            isSidebarCollapsed ? 'w-full max-w-full' : 'max-w-7xl grid grid-cols-1 gap-6 items-start lg:grid-cols-12'
           }`}>
             
             {/* CỘT CHÍNH: Mở rộng tràn viền toàn bộ khi thu gọn thông tin, hoặc 8 cột khi mở panel */}
-            <div className={`min-w-0 space-y-5 transition-all duration-300 ${
-              isTicketInfoCollapsed ? 'lg:col-span-12' : 'lg:col-span-8'
+            <div className={`space-y-5 transition-all duration-300 ${
+              isSidebarCollapsed ? 'w-full max-w-full' : 'lg:col-span-8'
             }`}>
-              {isTicketInfoCollapsed && (
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setIsTicketInfoCollapsed(false)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-2xs"
-                  >
-                    <SlidersHorizontal className="w-3.5 h-3.5" />
-                    Hiện thông tin ticket
-                  </button>
-                </div>
-              )}
               
               {/* 1. NỘI DUNG SỰ CỐ BAN ĐẦU */}
               <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
@@ -1082,18 +1072,18 @@ export const TicketDetailPage = () => {
 
               {/* 3. KHUNG SOẠN TIN NHẮN (Gọn, ít màu nổi, thao tác phụ tinh tế) */}
               <div className={`bg-white rounded-xl border border-slate-200 shadow-2xs transition-all ${
-                isExpandedComposer ? 'fixed inset-x-0 bottom-0 top-16 z-40 p-3 sm:p-6 overflow-y-auto flex flex-col bg-white rounded-none border-t border-slate-300' : ''
+                isExpandedComposer ? 'fixed inset-x-0 bottom-0 top-16 z-40 p-6 flex flex-col bg-white rounded-none border-t border-slate-300' : ''
               }`}>
                 <div className={`w-full ${isExpandedComposer ? 'flex-1 flex flex-col h-full max-w-4xl mx-auto' : ''}`}>
                   
                   {/* Thanh công cụ khung nhập: Chọn loại tin + Thao tác phụ */}
                   <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between flex-wrap gap-2 rounded-t-xl">
                     {!isRequester ? (
-                      <div className="grid grid-cols-2 sm:flex w-full sm:w-auto min-w-0 items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+                      <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
                         <button
                           type="button"
                           onClick={() => setIsInternalNote(false)}
-                          className={`px-2 sm:px-3 py-2 sm:py-1.5 min-w-0 rounded-md text-xs font-semibold transition-all cursor-pointer inline-flex justify-center items-center gap-1.5 ${
+                          className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
                             !isInternalNote 
                               ? 'bg-indigo-600 text-white shadow-xs' 
                               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
@@ -1105,7 +1095,7 @@ export const TicketDetailPage = () => {
                         <button
                           type="button"
                           onClick={() => setIsInternalNote(true)}
-                          className={`px-2 sm:px-3 py-2 sm:py-1.5 min-w-0 rounded-md text-xs font-semibold transition-all cursor-pointer inline-flex justify-center items-center gap-1.5 ${
+                          className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
                             isInternalNote 
                               ? 'bg-amber-600 text-white shadow-xs' 
                               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
@@ -1278,28 +1268,18 @@ export const TicketDetailPage = () => {
 
             </div>
 
-            {!isTicketInfoCollapsed && (
-            <>
             {/* CỘT PHỤ (4 CỘT): Gom nhóm thuộc tính Ticket, Cam kết SLA và Người yêu cầu thành 1 khối tinh gọn */}
-              <div className="min-w-0 lg:col-span-4 space-y-4 lg:sticky lg:top-4 animate-in fade-in slide-in-from-right-4 duration-200">
+            {!isSidebarCollapsed && (
+              <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-4 animate-in fade-in slide-in-from-right-4 duration-200">
                 
                 {/* BẢNG THUỘC TÍNH TICKET (Gọn gàng, đúng quyền cho từng vai trò) */}
                 <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs p-4 space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                     <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                       <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
                       Thuộc tính yêu cầu
                     </h3>
                     <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setIsTicketInfoCollapsed(true)}
-                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md"
-                        title="Thu gọn thông tin ticket"
-                      >
-                        <Minimize2 className="w-3 h-3" />
-                        <span>Thu gọn</span>
-                      </button>
                       {!isRequester && (
                         <button
                           type="button"
@@ -1312,7 +1292,14 @@ export const TicketDetailPage = () => {
                           <span>AI Triage</span>
                         </button>
                       )}
-
+                      <button
+                        type="button"
+                        onClick={() => setIsSidebarCollapsed(true)}
+                        className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                        title="Đóng bảng thông tin để mở rộng khung chat"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
 
@@ -1328,7 +1315,7 @@ export const TicketDetailPage = () => {
                           onChange={(e) => updateTicketMutation.mutate({ status: e.target.value })}
                           className="w-full text-xs font-medium px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400 cursor-pointer transition-all pr-7 appearance-none"
                         >
-                          <option value="NEW">Chờ nhân viên xử lý (NEW)</option>
+                          <option value="NEW">Mới tạo (NEW)</option>
                           <option value="PROCESSING">Đang xử lý (PROCESSING)</option>
                           <option value="WAITING_CUSTOMER">Chờ khách phản hồi (WAITING)</option>
                           <option value="RESOLVED">Đã giải quyết (RESOLVED)</option>
@@ -1507,8 +1494,7 @@ export const TicketDetailPage = () => {
 
 
             </div>
-            </>
-            )}
+          )}
 
         </div>
       </div>
@@ -1517,7 +1503,7 @@ export const TicketDetailPage = () => {
         {showAiTriageModal && classifyMutation.data && (
           <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full p-5 space-y-3.5 animate-in fade-in zoom-in-95 duration-100">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                 <h4 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
                   <Sparkles className="w-4 h-4 text-indigo-600" />
                   Đề xuất phân loại AI Triage

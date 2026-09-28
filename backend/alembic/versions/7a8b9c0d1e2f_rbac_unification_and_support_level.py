@@ -6,6 +6,7 @@ Create Date: 2026-09-27 18:15:00.000000
 
 """
 from typing import Sequence, Union
+import uuid
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.sql import text
@@ -53,8 +54,8 @@ def upgrade() -> None:
         if not existing:
             conn.execute(text(
                 f"INSERT INTO roles (id, role_name, description, created_at, updated_at) "
-                f"VALUES (gen_random_uuid()::varchar, '{r_name}', '{r_desc}', NOW(), NOW());"
-            ))
+                f"VALUES (:id, :role_name, :description, NOW(), NOW());"
+            ), {"id": str(uuid.uuid4()), "role_name": r_name, "description": r_desc})
 
 
 def downgrade() -> None:

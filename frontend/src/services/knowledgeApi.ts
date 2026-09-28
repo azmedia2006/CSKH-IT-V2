@@ -12,7 +12,6 @@ export interface Article {
   content: string;
   steps: string[];
   isCustom?: boolean;
-  isSampleUnapproved?: boolean;
 }
 
 export interface FAQItem {
@@ -40,20 +39,6 @@ export const knowledgeApi = {
   getArticleDetail: async (id: number | string): Promise<Article> => {
     const response = await api.get(`/knowledge/articles/${id}`);
     return response.data;
-  },
-
-  createArticle: async (data: Omit<Article, 'id' | 'views' | 'time' | 'isCustom' | 'categoryLabel'>): Promise<Article> => {
-    const response = await api.post('/knowledge/articles', data);
-    return response.data;
-  },
-
-  updateArticle: async (id: number | string, data: Omit<Article, 'id' | 'views' | 'time' | 'isCustom' | 'categoryLabel'>): Promise<Article> => {
-    const response = await api.put(`/knowledge/articles/${id}`, data);
-    return response.data;
-  },
-
-  deleteArticle: async (id: number | string): Promise<void> => {
-    await api.delete(`/knowledge/articles/${id}`);
   },
 
   getFaqs: async (): Promise<FAQItem[]> => {

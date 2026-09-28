@@ -1,8 +1,7 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, Text, Boolean, JSON, DateTime, ForeignKey
+from sqlalchemy import Column, String, Integer, Text, Boolean, JSON, ForeignKey
 from sqlalchemy.orm import relationship
-from pgvector.sqlalchemy import Vector
 from app.models.base import BaseModel
 
 class RAGDocument(BaseModel):
@@ -44,7 +43,8 @@ class RAGChunk(BaseModel):
     review_date = Column(String(50), nullable=True)
     chunk_index = Column(Integer, default=0)
     content = Column(Text, nullable=False)
-    embedding = Column(Vector(1536), nullable=True)  # pgvector embedding
+    # JSON stores vectors portably in MySQL. Similarity is ranked in the RAG service.
+    embedding = Column(JSON, nullable=True)
     metadata_json = Column(JSON, nullable=True)
 
     document = relationship("RAGDocument", back_populates="chunks")
