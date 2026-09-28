@@ -503,6 +503,10 @@ export const TicketDetailPage = () => {
     updateTicketMutation.mutate({ status: 'PROCESSING' });
   };
 
+  const handleAcceptTicket = () => {
+    updateTicketMutation.mutate({ status: 'PROCESSING' });
+  };
+
   const handleCopyCode = () => {
     if (!ticket?.ticket_code) return;
     navigator.clipboard.writeText(ticket.ticket_code);
@@ -545,7 +549,7 @@ export const TicketDetailPage = () => {
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-            <span>Mới tạo</span>
+            <span>Chờ xử lý</span>
           </span>
         );
       case 'PROCESSING':
@@ -728,7 +732,7 @@ export const TicketDetailPage = () => {
             {canManageTicketStatus && ticket.status === 'CLOSED' && (
               <button
                 type="button"
-                onClick={handleReopenTicket}
+                onClick={handleAcceptTicket}
                 disabled={updateTicketMutation.isPending}
                 className="inline-flex flex-1 xl:flex-none items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-2xs cursor-pointer disabled:opacity-50"
                 title="Mở lại ticket đã đóng"
@@ -738,7 +742,20 @@ export const TicketDetailPage = () => {
               </button>
             )}
 
-            {canManageTicketStatus && ticket.status !== 'RESOLVED' && ticket.status !== 'CLOSED' && (
+            {canManageTicketStatus && ticket.status === 'NEW' && (
+              <button
+                type="button"
+                onClick={handleReopenTicket}
+                disabled={updateTicketMutation.isPending}
+                className="inline-flex flex-1 xl:flex-none items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+                title="Tiếp nhận ticket và chuyển sang trạng thái đang xử lý"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Tiếp nhận xử lý</span>
+              </button>
+            )}
+
+            {canManageTicketStatus && (ticket.status === 'PROCESSING' || ticket.status === 'WAITING_CUSTOMER') && (
               <div className="grid grid-cols-2 flex-1 xl:flex-none min-w-0 gap-1.5">
                 <button
                   type="button"
@@ -1286,7 +1303,7 @@ export const TicketDetailPage = () => {
                           onChange={(e) => updateTicketMutation.mutate({ status: e.target.value })}
                           className="w-full text-xs font-medium px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400 cursor-pointer transition-all pr-7 appearance-none"
                         >
-                          <option value="NEW">Mới tạo (NEW)</option>
+                          <option value="NEW">Chờ xử lý (NEW)</option>
                           <option value="PROCESSING">Đang xử lý (PROCESSING)</option>
                           <option value="WAITING_CUSTOMER">Chờ khách phản hồi (WAITING)</option>
                           <option value="RESOLVED">Đã giải quyết (RESOLVED)</option>

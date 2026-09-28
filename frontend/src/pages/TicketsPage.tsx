@@ -195,7 +195,7 @@ export const TicketsPage = () => {
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-2xs whitespace-nowrap">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-            <span>Mới tạo</span>
+            <span>Chờ xử lý</span>
           </span>
         );
       case 'PROCESSING':
@@ -421,7 +421,7 @@ export const TicketsPage = () => {
 
             <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-indigo-700">Mới tạo & Đang chờ</span>
+                <span className="text-xs font-medium text-indigo-700">Chờ xử lý & Đang chờ</span>
                 <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
               </div>
               <div className="text-2xl font-bold text-indigo-600">
@@ -478,7 +478,7 @@ export const TicketsPage = () => {
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
-              Mới tạo ({tickets.filter(t => t.status === 'NEW').length})
+              Chờ xử lý ({tickets.filter(t => t.status === 'NEW').length})
             </button>
 
             <button
