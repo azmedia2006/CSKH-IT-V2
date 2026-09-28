@@ -12,7 +12,7 @@ import {
   AlertCircle, RotateCcw, Star, Quote, Lock, Globe, User as UserIcon,
   ShieldCheck, Copy, AlertTriangle, CheckCircle, Zap, ChevronDown, ChevronUp,
   Maximize2, Minimize2, Trash2, Paperclip, Download, Plus, UserCheck, Sparkles,
-  FileText, PanelRightClose, PanelRightOpen
+  FileText
 } from 'lucide-react';
 import { MarkdownView } from '../components/MarkdownView';
 
@@ -107,7 +107,6 @@ export const TicketDetailPage = () => {
   const [replyText, setReplyText] = useState('');
   const [isInternalNote, setIsInternalNote] = useState(false);
   const [isExpandedComposer, setIsExpandedComposer] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isDescriptionCollapsed, setIsDescriptionCollapsed] = useState(false);
   const [showAiSummary, setShowAiSummary] = useState(false);
   const [showAiTriageModal, setShowAiTriageModal] = useState(false);
@@ -698,30 +697,6 @@ export const TicketDetailPage = () => {
 
           {/* Nút hành động chính */}
           <div className="flex items-center gap-1.5 sm:gap-2 w-full xl:w-auto shrink-0 min-w-0 [&_button]:min-h-10 [&_button]:justify-center [&_button]:whitespace-nowrap [&_svg]:shrink-0">
-            {/* Nút Đóng / Mở bảng thuộc tính bên phải để nhắn tin rộng rãi */}
-            <button
-              type="button"
-              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className={`inline-flex shrink-0 items-center gap-1.5 w-10 md:w-auto md:px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer shadow-2xs ${
-                isSidebarCollapsed
-                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
-                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-              }`}
-              title={isSidebarCollapsed ? "Mở bảng thuộc tính ticket" : "Thu gọn bảng thuộc tính để mở rộng khung chat"}
-            >
-              {isSidebarCollapsed ? (
-                <>
-                  <PanelRightOpen className="w-3.5 h-3.5 text-indigo-600" />
-                  <span className="hidden md:inline">Mở thông tin</span>
-                </>
-              ) : (
-                <>
-                  <PanelRightClose className="w-3.5 h-3.5 text-slate-500" />
-                  <span className="hidden md:inline">Thu gọn thông tin</span>
-                </>
-              )}
-            </button>
-
             {/* Các nút hành động xử lý trạng thái ticket */}
             {ticket.status === 'RESOLVED' && (
               <div className="grid grid-cols-2 flex-1 xl:flex-none min-w-0 gap-1.5">
@@ -833,12 +808,12 @@ export const TicketDetailPage = () => {
         {/* BỐ CỤC 2 CỘT: Cột chính (Nội dung & Hội thoại) + Cột phụ (Bảng thuộc tính có thể đóng/mở) */}
         <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6 pb-24 sm:pb-24">
           <div className={`mx-auto transition-all duration-300 ${
-            isSidebarCollapsed ? 'w-full max-w-full' : 'max-w-7xl grid grid-cols-1 gap-6 items-start lg:grid-cols-12'
+            'max-w-7xl grid grid-cols-1 gap-6 items-start lg:grid-cols-12'
           }`}>
             
             {/* CỘT CHÍNH: Mở rộng tràn viền toàn bộ khi thu gọn thông tin, hoặc 8 cột khi mở panel */}
             <div className={`min-w-0 space-y-5 transition-all duration-300 ${
-              isSidebarCollapsed ? 'w-full max-w-full' : 'lg:col-span-8'
+              'min-w-0 lg:col-span-8'
             }`}>
               
               {/* 1. NỘI DUNG SỰ CỐ BAN ĐẦU */}
@@ -1272,7 +1247,6 @@ export const TicketDetailPage = () => {
             </div>
 
             {/* CỘT PHỤ (4 CỘT): Gom nhóm thuộc tính Ticket, Cam kết SLA và Người yêu cầu thành 1 khối tinh gọn */}
-            {!isSidebarCollapsed && (
               <div className="min-w-0 lg:col-span-4 space-y-4 lg:sticky lg:top-4 animate-in fade-in slide-in-from-right-4 duration-200">
                 
                 {/* BẢNG THUỘC TÍNH TICKET (Gọn gàng, đúng quyền cho từng vai trò) */}
@@ -1295,14 +1269,7 @@ export const TicketDetailPage = () => {
                           <span>AI Triage</span>
                         </button>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => setIsSidebarCollapsed(true)}
-                        className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                        title="Đóng bảng thông tin để mở rộng khung chat"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+
                     </div>
                   </div>
 
@@ -1497,7 +1464,6 @@ export const TicketDetailPage = () => {
 
 
             </div>
-          )}
 
         </div>
       </div>
