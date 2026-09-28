@@ -653,11 +653,11 @@ export const TicketDetailPage = () => {
 
   return (
     <Layout>
-      <div className="flex flex-col h-[calc(100vh-64px)] bg-[#f8fafc] overflow-hidden">
+      <div className="flex flex-col h-[calc(100dvh-64px)] bg-[#f8fafc] overflow-hidden">
         
         {/* THANH TIÊU ĐỀ TICKET GỌN GÀNG (Chỉ giữ thông tin cần thiết: Quay lại, Mã, Tiêu đề và 1 Trạng thái) */}
-        <header className="bg-white border-b border-slate-200/90 px-4 sm:px-6 py-2.5 shrink-0 flex items-center justify-between gap-3 z-10 shadow-2xs">
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+        <header className="bg-white border-b border-slate-200/90 px-4 sm:px-6 py-2.5 shrink-0 flex flex-col items-stretch xl:flex-row xl:items-center justify-between gap-3 z-10 shadow-2xs">
+          <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
             <Link 
               to="/tickets" 
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer shrink-0"
@@ -683,21 +683,21 @@ export const TicketDetailPage = () => {
               )}
             </button>
 
-            <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 shrink-0">
+            <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 max-w-full break-words">
               {getCategoryLabel(ticket)}
             </span>
 
             {/* Huy hiệu trạng thái xử lý trực quan ngay cạnh tiêu đề */}
             {renderStatusBadge(ticket.status)}
 
-            <h1 className="text-sm sm:text-base font-semibold text-slate-900 truncate min-w-0" title={ticket.title}>
+            <h1 className="w-full xl:w-auto xl:flex-1 text-sm sm:text-base font-semibold text-slate-900 break-words xl:truncate min-w-0" title={ticket.title}>
               {ticket.title}
             </h1>
 
           </div>
 
           {/* Nút hành động chính */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0 max-w-full [&_button]:min-h-10 [&_button]:shrink-0 [&_button]:whitespace-nowrap">
             {/* Nút Đóng / Mở bảng thuộc tính bên phải để nhắn tin rộng rãi */}
             <button
               type="button"
@@ -828,13 +828,13 @@ export const TicketDetailPage = () => {
         )}
 
         {/* BỐ CỤC 2 CỘT: Cột chính (Nội dung & Hội thoại) + Cột phụ (Bảng thuộc tính có thể đóng/mở) */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-6 pb-20">
+        <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6 pb-24 sm:pb-24">
           <div className={`mx-auto transition-all duration-300 ${
             isSidebarCollapsed ? 'w-full max-w-full' : 'max-w-7xl grid grid-cols-1 gap-6 items-start lg:grid-cols-12'
           }`}>
             
             {/* CỘT CHÍNH: Mở rộng tràn viền toàn bộ khi thu gọn thông tin, hoặc 8 cột khi mở panel */}
-            <div className={`space-y-5 transition-all duration-300 ${
+            <div className={`min-w-0 space-y-5 transition-all duration-300 ${
               isSidebarCollapsed ? 'w-full max-w-full' : 'lg:col-span-8'
             }`}>
               
@@ -1072,18 +1072,18 @@ export const TicketDetailPage = () => {
 
               {/* 3. KHUNG SOẠN TIN NHẮN (Gọn, ít màu nổi, thao tác phụ tinh tế) */}
               <div className={`bg-white rounded-xl border border-slate-200 shadow-2xs transition-all ${
-                isExpandedComposer ? 'fixed inset-x-0 bottom-0 top-16 z-40 p-6 flex flex-col bg-white rounded-none border-t border-slate-300' : ''
+                isExpandedComposer ? 'fixed inset-x-0 bottom-0 top-16 z-40 p-3 sm:p-6 overflow-y-auto flex flex-col bg-white rounded-none border-t border-slate-300' : ''
               }`}>
                 <div className={`w-full ${isExpandedComposer ? 'flex-1 flex flex-col h-full max-w-4xl mx-auto' : ''}`}>
                   
                   {/* Thanh công cụ khung nhập: Chọn loại tin + Thao tác phụ */}
                   <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between flex-wrap gap-2 rounded-t-xl">
                     {!isRequester ? (
-                      <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+                      <div className="grid grid-cols-2 sm:flex w-full sm:w-auto min-w-0 items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
                         <button
                           type="button"
                           onClick={() => setIsInternalNote(false)}
-                          className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                          className={`px-2 sm:px-3 py-2 sm:py-1.5 min-w-0 rounded-md text-xs font-semibold transition-all cursor-pointer inline-flex justify-center items-center gap-1.5 ${
                             !isInternalNote 
                               ? 'bg-indigo-600 text-white shadow-xs' 
                               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
@@ -1095,7 +1095,7 @@ export const TicketDetailPage = () => {
                         <button
                           type="button"
                           onClick={() => setIsInternalNote(true)}
-                          className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                          className={`px-2 sm:px-3 py-2 sm:py-1.5 min-w-0 rounded-md text-xs font-semibold transition-all cursor-pointer inline-flex justify-center items-center gap-1.5 ${
                             isInternalNote 
                               ? 'bg-amber-600 text-white shadow-xs' 
                               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
@@ -1270,11 +1270,11 @@ export const TicketDetailPage = () => {
 
             {/* CỘT PHỤ (4 CỘT): Gom nhóm thuộc tính Ticket, Cam kết SLA và Người yêu cầu thành 1 khối tinh gọn */}
             {!isSidebarCollapsed && (
-              <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-4 animate-in fade-in slide-in-from-right-4 duration-200">
+              <div className="min-w-0 lg:col-span-4 space-y-4 lg:sticky lg:top-4 animate-in fade-in slide-in-from-right-4 duration-200">
                 
                 {/* BẢNG THUỘC TÍNH TICKET (Gọn gàng, đúng quyền cho từng vai trò) */}
                 <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs p-4 space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
                     <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                       <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
                       Thuộc tính yêu cầu
@@ -1503,7 +1503,7 @@ export const TicketDetailPage = () => {
         {showAiTriageModal && classifyMutation.data && (
           <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full p-5 space-y-3.5 animate-in fade-in zoom-in-95 duration-100">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
                 <h4 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
                   <Sparkles className="w-4 h-4 text-indigo-600" />
                   Đề xuất phân loại AI Triage
